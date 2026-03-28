@@ -11,7 +11,6 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Your exact Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCf7oLsMasSxi496kcdxn6zVjUkpFqAU0E",
             authDomain: "ravenwood-results-portal.firebaseapp.com",
@@ -26,21 +25,28 @@
         window.doc = doc;
         window.setDoc = setDoc;
         window.getDoc = getDoc;
+        
+        // Initialize App on Load
+        window.onload = initApp;
     </script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
 
-    <nav class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
+    <nav class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center relative z-20">
         <div class="flex items-center space-x-3">
             <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-blue-900 font-bold text-xs">LOGO</div>
             <h1 class="text-xl font-bold tracking-wide">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
         </div>
-        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded font-semibold transition shadow">Admin Login</button>
+        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded font-semibold transition shadow">⚙️ Admin Panel</button>
     </nav>
 
-    <div class="max-w-7xl mx-auto mt-6 p-6 bg-white shadow-xl rounded-lg border border-gray-200">
+    <div class="max-w-7xl mx-auto mt-6 p-6 bg-white shadow-xl rounded-lg border border-gray-200 relative">
         
-        <div id="teacher-login-section" class="text-center py-10">
+        <div id="loading-screen" class="text-center py-20 text-blue-900 font-bold text-xl">
+            Connecting to Database...
+        </div>
+
+        <div id="teacher-login-section" class="hidden text-center py-10">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Teacher Portal</h2>
             <div class="flex flex-col md:flex-row justify-center gap-4 mb-8">
                 <select id="academic-year" class="p-3 border rounded shadow-sm bg-gray-50">
@@ -55,9 +61,7 @@
                 </select>
                 <select id="class-select" class="p-3 border rounded shadow-sm w-64 bg-gray-50">
                     <option value="">-- Select Class --</option>
-                    <option value="I-Daffodils">Class I - Daffodils</option>
-                    <option value="V-MtBlanc">Class V - Mt. Blanc</option>
-                </select>
+                    </select>
             </div>
             <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded font-bold text-lg shadow transition transform hover:scale-105">Enter Class</button>
         </div>
@@ -81,36 +85,192 @@
             </div>
             <button onclick="addStudentRow()" class="bg-blue-50 text-blue-700 border border-blue-300 px-4 py-2 rounded font-semibold hover:bg-blue-100 transition shadow-sm">+ Add Student Row</button>
         </div>
+
+        <div id="admin-dashboard" class="hidden absolute top-0 left-0 w-full h-full bg-white z-10 p-8 rounded-lg">
+            <div class="flex justify-between items-center mb-6 border-b pb-4">
+                <h2 class="text-3xl font-bold text-blue-900">⚙️ Master Admin Panel</h2>
+                <div class="space-x-4">
+                    <button onclick="saveAdminConfig()" class="bg-green-600 hover:bg-green-500 text-white px-6 py-2 rounded font-bold shadow transition">💾 Save All Settings</button>
+                    <button onclick="closeAdmin()" class="bg-red-500 hover:bg-red-400 text-white px-4 py-2 rounded font-bold shadow transition">Exit Admin</button>
+                </div>
+            </div>
+
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div class="bg-gray-50 p-6 rounded-lg border shadow-sm">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Manage Classes</h3>
+                    <div class="flex gap-2 mb-4">
+                        <input type="text" id="new-class-input" placeholder="e.g. VI-Newton" class="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400 outline-none">
+                        <button onclick="addClass()" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">Add</button>
+                    </div>
+                    <ul id="admin-class-list" class="space-y-2 max-h-64 overflow-y-auto"></ul>
+                </div>
+
+                <div class="bg-gray-50 p-6 rounded-lg border shadow-sm">
+                    <h3 class="text-xl font-bold mb-4 text-gray-800">Manage Subjects</h3>
+                    
+                    <div class="mb-4">
+                        <h4 class="font-bold text-gray-600 mb-2">Numeric Subjects (Maths, EVS, etc.)</h4>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="new-num-sub" placeholder="e.g. Science" class="border p-2 w-full rounded focus:ring-2 focus:ring-blue-400 outline-none">
+                            <button onclick="addSubject('numeric')" class="bg-blue-600 text-white px-4 rounded font-bold hover:bg-blue-500">Add</button>
+                        </div>
+                        <div id="admin-num-sub-list" class="flex flex-wrap gap-2 mb-4"></div>
+                    </div>
+
+                    <div class="border-t pt-4">
+                        <h4 class="font-bold text-gray-600 mb-2">Grading Subjects (Art, Music, etc.)</h4>
+                        <div class="flex gap-2 mb-2">
+                            <input type="text" id="new-grad-sub" placeholder="e.g. Yoga" class="border p-2 w-full rounded focus:ring-2 focus:ring-purple-400 outline-none">
+                            <button onclick="addSubject('grading')" class="bg-purple-600 text-white px-4 rounded font-bold hover:bg-purple-500">Add</button>
+                        </div>
+                        <div id="admin-grad-sub-list" class="flex flex-wrap gap-2"></div>
+                    </div>
+                </div>
+            </div>
+        </div>
+
     </div>
 
     <script>
-        // --- CONFIGURATION ---
+        // --- DYNAMIC SYSTEM CONFIGURATION ---
         const TERM_MAX_MARKS = { "PT1": 40, "HalfYearly": 80, "PT2": 40, "Final": 100 };
-        const NUMERIC_SUBJECTS = ["English", "Hindi", "Punjabi", "Maths", "EVS", "ICT"];
-        const GRADING_SUBJECTS = ["Art", "Dance", "Music", "P.Edu"];
+        
+        // These will now be loaded from Firebase!
+        let sysConfig = {
+            classes: ["I-Daffodils", "V-MtBlanc"],
+            numericSubjects: ["English", "Hindi", "Punjabi", "Maths", "EVS", "ICT"],
+            gradingSubjects: ["Art", "Dance", "Music", "P.Edu"]
+        };
         
         let currentState = { year: "", term: "", cls: "", students: [] };
+
+        // --- SYSTEM INITIALIZATION ---
+        async function initApp() {
+            try {
+                const docRef = window.doc(window.db, "settings", "global_config");
+                const docSnap = await window.getDoc(docRef);
+                
+                if (docSnap.exists()) {
+                    sysConfig = docSnap.data();
+                } else {
+                    // Seed the database with defaults on first run
+                    await window.setDoc(docRef, sysConfig);
+                }
+                
+                // Populate Teacher Dropdowns
+                const classSelect = document.getElementById('class-select');
+                classSelect.innerHTML = '<option value="">-- Select Class --</option>';
+                sysConfig.classes.forEach(c => {
+                    classSelect.innerHTML += `<option value="${c}">${c.replace('-', ' ')}</option>`;
+                });
+
+                document.getElementById('loading-screen').classList.add('hidden');
+                document.getElementById('teacher-login-section').classList.remove('hidden');
+            } catch (error) {
+                alert("Database Connection Error: " + error.message);
+            }
+        }
+
+        // --- ADMIN PANEL LOGIC ---
+        function adminLogin() {
+            const pwd = prompt("Enter Master Admin Password:");
+            if(pwd === "Admin@Ravenwood2025") {
+                document.getElementById('teacher-login-section').classList.add('hidden');
+                document.getElementById('teacher-dashboard').classList.add('hidden');
+                document.getElementById('admin-dashboard').classList.remove('hidden');
+                renderAdminUI();
+            } else if (pwd) {
+                alert("Incorrect Password.");
+            }
+        }
+
+        function closeAdmin() {
+            location.reload(); // Refresh to apply changes to teacher portal
+        }
+
+        function renderAdminUI() {
+            // Render Classes
+            let classHTML = '';
+            sysConfig.classes.forEach((c, index) => {
+                classHTML += `<li class="flex justify-between items-center bg-white p-2 border rounded">
+                    <span class="font-bold">${c}</span>
+                    <button onclick="deleteItem('classes', ${index})" class="text-red-500 hover:text-red-700 font-bold px-2">X</button>
+                </li>`;
+            });
+            document.getElementById('admin-class-list').innerHTML = classHTML;
+
+            // Render Numeric Subjects
+            let numHTML = '';
+            sysConfig.numericSubjects.forEach((sub, index) => {
+                numHTML += `<span class="bg-blue-100 text-blue-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    ${sub} <button onclick="deleteItem('numericSubjects', ${index})" class="text-blue-500 hover:text-blue-900 font-bold">x</button>
+                </span>`;
+            });
+            document.getElementById('admin-num-sub-list').innerHTML = numHTML;
+
+            // Render Grading Subjects
+            let gradHTML = '';
+            sysConfig.gradingSubjects.forEach((sub, index) => {
+                gradHTML += `<span class="bg-purple-100 text-purple-800 px-3 py-1 rounded-full text-sm flex items-center gap-2">
+                    ${sub} <button onclick="deleteItem('gradingSubjects', ${index})" class="text-purple-500 hover:text-purple-900 font-bold">x</button>
+                </span>`;
+            });
+            document.getElementById('admin-grad-sub-list').innerHTML = gradHTML;
+        }
+
+        function addClass() {
+            let val = document.getElementById('new-class-input').value.trim();
+            if(val && !sysConfig.classes.includes(val)) {
+                sysConfig.classes.push(val);
+                document.getElementById('new-class-input').value = '';
+                renderAdminUI();
+            }
+        }
+
+        function addSubject(type) {
+            let inputId = type === 'numeric' ? 'new-num-sub' : 'new-grad-sub';
+            let arrayName = type === 'numeric' ? 'numericSubjects' : 'gradingSubjects';
+            let val = document.getElementById(inputId).value.trim();
+            
+            if(val && !sysConfig[arrayName].includes(val)) {
+                sysConfig[arrayName].push(val);
+                document.getElementById(inputId).value = '';
+                renderAdminUI();
+            }
+        }
+
+        function deleteItem(arrayName, index) {
+            sysConfig[arrayName].splice(index, 1);
+            renderAdminUI();
+        }
+
+        async function saveAdminConfig() {
+            try {
+                await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+                alert("Settings Saved Successfully! All teacher portals are updated.");
+            } catch (error) {
+                alert("Error saving settings: " + error.message);
+            }
+        }
 
         // --- CORE MATH ENGINE ---
         function calculateGradesAndRanks() {
             let maxPerSubject = TERM_MAX_MARKS[currentState.term] || 100;
-            let totalMax = maxPerSubject * NUMERIC_SUBJECTS.length;
+            let totalMax = maxPerSubject * sysConfig.numericSubjects.length;
 
-            // 1. Calculate Totals & Percentages
             currentState.students.forEach(s => {
                 let total = 0;
                 let subjectsFilled = 0;
                 
-                NUMERIC_SUBJECTS.forEach(sub => {
+                sysConfig.numericSubjects.forEach(sub => {
                     let mark = parseFloat(s.marks[sub]);
                     if (!isNaN(mark)) { total += mark; subjectsFilled++; }
                 });
 
-                if (subjectsFilled === NUMERIC_SUBJECTS.length) {
+                if (subjectsFilled === sysConfig.numericSubjects.length && sysConfig.numericSubjects.length > 0) {
                     s.total = total;
                     s.percentage = parseFloat(((total / totalMax) * 100).toFixed(2));
                     
-                    // Grade Logic
                     let p = s.percentage;
                     if(p >= 91) s.grade = "A1"; else if(p >= 81) s.grade = "A2";
                     else if(p >= 71) s.grade = "B1"; else if(p >= 61) s.grade = "B2";
@@ -121,7 +281,6 @@
                 }
             });
 
-            // 2. Dense Ranking Logic (Top 4)
             let validStudents = currentState.students.filter(s => s.percentage !== "Inc");
             let uniqueScores = [...new Set(validStudents.map(s => s.percentage))].sort((a, b) => b - a);
 
@@ -132,7 +291,7 @@
                     else if(rankNum === 2) s.rank = "2nd";
                     else if(rankNum === 3) s.rank = "3rd";
                     else if(rankNum === 4) s.rank = "4th";
-                    else s.rank = ""; // Blank if 5th or below
+                    else s.rank = ""; 
                 }
             });
         }
@@ -151,7 +310,6 @@
             let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
             document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${termLabel}`;
 
-            // Fetch Data from Firebase
             const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
             const docSnap = await window.getDoc(docRef);
             
@@ -166,91 +324,70 @@
         function renderTable() {
             calculateGradesAndRanks();
             
-            // Render Headers (Subjects first, then Totals at the end)
             let headHTML = `<tr><th class="px-4 py-3">Roll</th><th class="px-4 py-3 w-48">Student Name</th>`;
-            NUMERIC_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-blue-800">${sub}</th>`);
-            GRADING_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-purple-800">${sub}</th>`);
-            headHTML += `<th class="px-4 py-3 text-yellow-300 border-l-2 border-gray-400">Total</th><th class="px-4 py-3 text-yellow-300"># %age</th><th class="px-4 py-3 text-yellow-300">Grade</th><th class="px-4 py-3 text-yellow-300">Rank</th>`;
-            headHTML += `</tr>`;
+            sysConfig.numericSubjects.forEach(sub => headHTML += `<th class="px-4 py-3 bg-blue-800">${sub}</th>`);
+            sysConfig.gradingSubjects.forEach(sub => headHTML += `<th class="px-4 py-3 bg-purple-800">${sub}</th>`);
+            headHTML += `<th class="px-4 py-3 text-yellow-300 border-l-2 border-gray-400">Total</th><th class="px-4 py-3 text-yellow-300"># %age</th><th class="px-4 py-3 text-yellow-300">Grade</th><th class="px-4 py-3 text-yellow-300">Rank</th></tr>`;
             document.getElementById('table-head').innerHTML = headHTML;
 
-            // Render Rows
             let bodyHTML = "";
             currentState.students.forEach((s, index) => {
                 bodyHTML += `<tr class="border-b hover:bg-gray-50">
                     <td class="px-4 py-2 font-bold text-center">${s.roll || index + 1}</td>
                     <td class="px-4 py-2"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="border p-1 w-full rounded focus:ring-2 focus:ring-blue-400 outline-none"></td>`;
                 
-                // 1. Numeric Subjects
-                NUMERIC_SUBJECTS.forEach(sub => {
+                sysConfig.numericSubjects.forEach(sub => {
                     let val = s.marks[sub] || '';
                     bodyHTML += `<td class="px-4 py-2"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="border p-1 w-16 rounded text-center focus:ring-2 focus:ring-blue-400 outline-none"></td>`;
                 });
 
-                // 2. Grading Subjects (Art, Dance, etc.)
-                GRADING_SUBJECTS.forEach(sub => {
+                sysConfig.gradingSubjects.forEach(sub => {
                     let val = s.grades[sub] || '';
                     bodyHTML += `<td class="px-4 py-2"><input type="text" maxlength="2" value="${val}" onchange="updateData(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="border p-1 w-12 rounded text-center uppercase focus:ring-2 focus:ring-purple-400 outline-none"></td>`;
                 });
 
-                // 3. Calculated Totals (Moved to the end)
                 bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50 text-center border-l-2 border-gray-300">${s.total || ''}</td>
                              <td class="px-4 py-2 font-bold bg-green-50 text-center">${s.percentage || ''}</td>
                              <td class="px-4 py-2 font-bold bg-green-50 text-blue-600 text-center">${s.grade || ''}</td>
-                             <td class="px-4 py-2 font-bold bg-green-50 text-red-600 text-center">${s.rank || ''}</td>`;
-                bodyHTML += `</tr>`;
+                             <td class="px-4 py-2 font-bold bg-green-50 text-red-600 text-center">${s.rank || ''}</td></tr>`;
             });
             document.getElementById('table-body').innerHTML = bodyHTML;
         }
 
-        // --- DATA MANAGEMENT ---
+        // --- DATA MANAGEMENT & EXPORT (Unchanged logic) ---
         function updateData(index, field, value, subField = null) {
             document.getElementById('save-status').innerText = "⚠️ Unsaved Changes";
             document.getElementById('save-status').classList.replace('text-gray-500', 'text-red-500');
-            
             if (subField) {
                 if (!currentState.students[index][field]) currentState.students[index][field] = {};
                 currentState.students[index][field][subField] = value;
-            } else {
-                currentState.students[index][field] = value;
-            }
-            renderTable(); // Re-trigger math engine instantly
+            } else { currentState.students[index][field] = value; }
+            renderTable(); 
         }
 
         function addStudentRow() {
-            let nextRoll = currentState.students.length + 1;
-            currentState.students.push({ roll: nextRoll, name: "", marks: {}, grades: {} });
+            currentState.students.push({ roll: currentState.students.length + 1, name: "", marks: {}, grades: {} });
             renderTable();
         }
 
         async function saveToFirebase() {
             const status = document.getElementById('save-status');
             status.innerText = "Saving...";
-            
             try {
                 const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
                 await window.setDoc(docRef, { students: currentState.students, lastUpdated: new Date().toISOString() });
-                
                 status.innerText = "✅ Saved to Cloud";
                 status.classList.replace('text-red-500', 'text-green-600');
                 setTimeout(() => status.classList.replace('text-green-600', 'text-gray-500'), 3000);
-            } catch (error) {
-                alert("Error saving: " + error.message);
-                status.innerText = "❌ Save Failed";
-            }
+            } catch (error) { alert("Error saving: " + error.message); status.innerText = "❌ Save Failed"; }
         }
 
-        // --- EXCEL GENERATOR ---
         async function exportToExcel() {
             const workbook = new ExcelJS.Workbook();
             const sheet = workbook.addWorksheet(currentState.cls);
-
             let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
-            
-            // Excel columns ordered to match the new screen layout
-            let fullColumns = ["Roll No.", "Student Name", ...NUMERIC_SUBJECTS, ...GRADING_SUBJECTS, "Total", "%age", "Grade", "Position"];
+            let fullColumns = ["Roll No.", "Student Name", ...sysConfig.numericSubjects, ...sysConfig.gradingSubjects, "Total", "%age", "Grade", "Position"];
 
-            // 1. Headers (Rows 1 & 2)
             sheet.mergeCells(1, 1, 1, fullColumns.length);
             let title1 = sheet.getCell('A1');
             title1.value = 'NWW RAVENWOOD INTERNATIONAL SCHOOL';
@@ -265,7 +402,6 @@
             title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; 
             title2.alignment = { horizontal: 'center', vertical: 'middle' };
 
-            // 2. Column Headers (Row 3)
             let headerRow = sheet.addRow(fullColumns);
             headerRow.eachCell((cell) => {
                 cell.font = { bold: true };
@@ -274,22 +410,15 @@
                 cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
             });
 
-            // Set Column Widths
-            sheet.getColumn(1).width = 10; 
-            sheet.getColumn(2).width = 25; 
+            sheet.getColumn(1).width = 10; sheet.getColumn(2).width = 25; 
             for(let i = 3; i <= fullColumns.length; i++) sheet.getColumn(i).width = 12;
 
-            // 3. Add Student Data
             currentState.students.forEach((s, index) => {
                 let rowData = [
-                    s.roll || index + 1,
-                    s.name || "",
-                    ...NUMERIC_SUBJECTS.map(sub => s.marks[sub] || ""),
-                    ...GRADING_SUBJECTS.map(sub => s.grades[sub] || ""),
-                    s.total || "",
-                    s.percentage || "",
-                    s.grade || "",
-                    s.rank || ""
+                    s.roll || index + 1, s.name || "",
+                    ...sysConfig.numericSubjects.map(sub => s.marks[sub] || ""),
+                    ...sysConfig.gradingSubjects.map(sub => s.grades[sub] || ""),
+                    s.total || "", s.percentage || "", s.grade || "", s.rank || ""
                 ];
                 let row = sheet.addRow(rowData);
                 row.eachCell((cell) => {
@@ -298,26 +427,13 @@
                 });
             });
 
-            // 4. Freeze Top Panes (Keeps headers visible when scrolling)
             sheet.views = [{ state: 'frozen', ySplit: 3 }];
-
-            // Trigger Download
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a');
             link.href = URL.createObjectURL(blob);
             link.download = `Result_${currentState.cls}_${currentState.term}_${currentState.year}.xlsx`;
             link.click();
-        }
-
-        // --- ADMIN LOGIN ---
-        function adminLogin() {
-            const pwd = prompt("Enter Master Admin Password:");
-            if(pwd === "Admin@Ravenwood2025") {
-                alert("Admin access granted! The full Admin Dashboard overlay will be connected next.");
-            } else if (pwd) {
-                alert("Incorrect Password.");
-            }
         }
     </script>
 </body>

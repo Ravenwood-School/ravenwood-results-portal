@@ -9,16 +9,16 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // Your Firebase Configuration
+        // YOUR EXACT NEW FIREBASE CONFIGURATION
         const firebaseConfig = {
-            apiKey: "AIzaSyCaCJ93-Y4_Q8C1nwXlKSD_WVlfzfkOCOk",
-            authDomain: "ravenwood-exam-system.firebaseapp.com",
-            projectId: "ravenwood-exam-system",
-            storageBucket: "ravenwood-exam-system.firebasestorage.app",
-            messagingSenderId: "702062155178",
-            appId: "1:702062155178:web:fdb06eea0adf1fe21447d3"
+            apiKey: "AIzaSyCf7oLsMasSxi496kcdxn6zVjUkpFqAU0E",
+            authDomain: "ravenwood-results-portal.firebaseapp.com",
+            projectId: "ravenwood-results-portal",
+            storageBucket: "ravenwood-results-portal.firebasestorage.app",
+            messagingSenderId: "721983729926",
+            appId: "1:721983729926:web:758c092fdcf8f834c92e87"
         };
 
         const app = initializeApp(firebaseConfig);
@@ -26,7 +26,6 @@
         window.doc = doc;
         window.setDoc = setDoc;
         window.getDoc = getDoc;
-        window.onSnapshot = onSnapshot;
     </script>
 </head>
 <body class="bg-gray-50 text-gray-800 font-sans">
@@ -44,12 +43,15 @@
         <div id="teacher-login-section" class="text-center py-10">
             <h2 class="text-3xl font-bold text-gray-800 mb-6">Teacher Portal</h2>
             <div class="flex flex-col md:flex-row justify-center gap-4 mb-8">
-                <select id="academic-year" class="p-3 border rounded shadow-sm bg-gray-50"><option value="2026-27">2026-27</option></select>
+                <select id="academic-year" class="p-3 border rounded shadow-sm bg-gray-50">
+                    <option value="2026-27">2026-27</option>
+                    <option value="2025-26">2025-26 (Historical)</option>
+                </select>
                 <select id="exam-term" class="p-3 border rounded shadow-sm bg-gray-50">
-                    <option value="PT1">PT 1 Exam</option>
-                    <option value="HalfYearly">Half Yearly Exam</option>
-                    <option value="PT2">PT 2 Exam</option>
-                    <option value="Final">Final Year Exam</option>
+                    <option value="PT1">PT 1 Exam (40 Marks)</option>
+                    <option value="HalfYearly">Half Yearly Exam (80 Marks)</option>
+                    <option value="PT2">PT 2 Exam (40 Marks)</option>
+                    <option value="Final">Final Year Exam (100 Marks)</option>
                 </select>
                 <select id="class-select" class="p-3 border rounded shadow-sm w-64 bg-gray-50">
                     <option value="">-- Select Class --</option>
@@ -145,7 +147,9 @@
 
             document.getElementById('teacher-login-section').classList.add('hidden');
             document.getElementById('teacher-dashboard').classList.remove('hidden');
-            document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${currentState.term.replace('Yearly', ' Yearly')}`;
+            
+            let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
+            document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${termLabel}`;
 
             // Fetch from Firebase
             const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
@@ -174,7 +178,7 @@
             let bodyHTML = "";
             currentState.students.forEach((s, index) => {
                 bodyHTML += `<tr class="border-b hover:bg-gray-50">
-                    <td class="px-4 py-2 font-bold">${s.roll || index + 1}</td>
+                    <td class="px-4 py-2 font-bold text-center">${s.roll || index + 1}</td>
                     <td class="px-4 py-2"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="border p-1 w-full rounded"></td>`;
                 
                 NUMERIC_SUBJECTS.forEach(sub => {
@@ -182,10 +186,10 @@
                     bodyHTML += `<td class="px-4 py-2"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="border p-1 w-16 rounded text-center"></td>`;
                 });
 
-                bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50">${s.total || ''}</td>
-                             <td class="px-4 py-2 font-bold bg-green-50">${s.percentage || ''}</td>
-                             <td class="px-4 py-2 font-bold bg-green-50 text-blue-600">${s.grade || ''}</td>
-                             <td class="px-4 py-2 font-bold bg-green-50 text-red-600">${s.rank || ''}</td>`;
+                bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50 text-center">${s.total || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50 text-center">${s.percentage || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50 text-blue-600 text-center">${s.grade || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50 text-red-600 text-center">${s.rank || ''}</td>`;
                 
                 GRADING_SUBJECTS.forEach(sub => {
                     let val = s.grades[sub] || '';
@@ -230,6 +234,84 @@
             } catch (error) {
                 alert("Error saving: " + error.message);
                 status.innerText = "❌ Save Failed";
+            }
+        }
+
+        // --- EXCEL GENERATOR ---
+        async function exportToExcel() {
+            const workbook = new ExcelJS.Workbook();
+            const sheet = workbook.addWorksheet(currentState.cls);
+
+            let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
+            let fullColumns = ["Roll No.", "Student Name", ...NUMERIC_SUBJECTS, "Total", "%age", "Grade", "Position", ...GRADING_SUBJECTS];
+
+            // 1. Headers (Rows 1 & 2)
+            sheet.mergeCells(1, 1, 1, fullColumns.length);
+            let title1 = sheet.getCell('A1');
+            title1.value = 'NWW RAVENWOOD INTERNATIONAL SCHOOL';
+            title1.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
+            title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Tailwind blue-950
+            title1.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            sheet.mergeCells(2, 1, 2, fullColumns.length);
+            let title2 = sheet.getCell('A2');
+            title2.value = `${termLabel} Cumulative Result of ${currentState.cls.replace('-', ' ')} for Academic Session ${currentState.year}`;
+            title2.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
+            title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Tailwind blue-900
+            title2.alignment = { horizontal: 'center', vertical: 'middle' };
+
+            // 2. Column Headers (Row 3)
+            let headerRow = sheet.addRow(fullColumns);
+            headerRow.eachCell((cell) => {
+                cell.font = { bold: true };
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } }; // Light blue
+                cell.alignment = { horizontal: 'center' };
+                cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+            });
+
+            // Set Column Widths
+            sheet.getColumn(1).width = 10; // Roll
+            sheet.getColumn(2).width = 25; // Name
+            for(let i = 3; i <= fullColumns.length; i++) sheet.getColumn(i).width = 12;
+
+            // 3. Add Student Data
+            currentState.students.forEach((s, index) => {
+                let rowData = [
+                    s.roll || index + 1,
+                    s.name || "",
+                    ...NUMERIC_SUBJECTS.map(sub => s.marks[sub] || ""),
+                    s.total || "",
+                    s.percentage || "",
+                    s.grade || "",
+                    s.rank || "",
+                    ...GRADING_SUBJECTS.map(sub => s.grades[sub] || "")
+                ];
+                let row = sheet.addRow(rowData);
+                row.eachCell((cell) => {
+                    cell.alignment = { horizontal: 'center' };
+                    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                });
+            });
+
+            // 4. Freeze Top Panes
+            sheet.views = [{ state: 'frozen', ySplit: 3 }];
+
+            // Trigger Download
+            const buffer = await workbook.xlsx.writeBuffer();
+            const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
+            const link = document.createElement('a');
+            link.href = URL.createObjectURL(blob);
+            link.download = `Result_${currentState.cls}_${currentState.term}_${currentState.year}.xlsx`;
+            link.click();
+        }
+
+        // --- ADMIN LOGIN ---
+        function adminLogin() {
+            const pwd = prompt("Enter Master Admin Password:");
+            if(pwd === "Admin@Ravenwood2025") {
+                alert("Admin access granted! (The Admin Panel overlay will be built in the next module).");
+            } else if (pwd) {
+                alert("Incorrect Password.");
             }
         }
     </script>

@@ -3,13 +3,13 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Ravenwood Result System</title>
+    <title>Ravenwood Admin Dashboard</title>
     <script src="https://cdn.tailwindcss.com"></script>
     <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, doc, setDoc, getDoc, collection, getDocs } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, collection, getDocs, deleteDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
         const firebaseConfig = {
             apiKey: "AIzaSyCf7oLsMasSxi496kcdxn6zVjUkpFqAU0E",
@@ -22,334 +22,341 @@
 
         const app = initializeApp(firebaseConfig);
         window.db = getFirestore(app);
-        window.doc = doc;
-        window.setDoc = setDoc;
-        window.getDoc = getDoc;
-        window.collection = collection;
-        window.getDocs = getDocs;
+        window.doc = doc; window.setDoc = setDoc; window.getDoc = getDoc;
+        window.collection = collection; window.getDocs = getDocs; window.deleteDoc = deleteDoc;
         
         window.onload = initApp;
     </script>
 
     <style>
-        ::-webkit-scrollbar { width: 8px; height: 8px; }
-        ::-webkit-scrollbar-track { background: #f1f1f1; }
-        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 4px; }
+        ::-webkit-scrollbar { width: 6px; height: 6px; }
+        ::-webkit-scrollbar-track { background: #f8fafc; }
+        ::-webkit-scrollbar-thumb { background: #cbd5e1; border-radius: 10px; }
         ::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
-        .table-input { width: 100%; border: none; background: transparent; text-align: center; outline: none; font-weight: 500; }
-        .table-input:focus { background: #e0f2fe; border-radius: 4px; }
+        .table-input { width: 100%; border: none; background: transparent; text-align: center; outline: none; font-weight: 600; }
+        .table-input:focus { background: #e0f2fe; border-radius: 4px; box-shadow: 0 0 0 2px #3b82f6; }
+        body { background-color: #f1f5f9; }
     </style>
 </head>
-<body class="bg-slate-100 text-slate-800 font-sans min-h-screen">
+<body class="text-slate-800 font-sans h-screen flex flex-col overflow-hidden">
 
-    <nav class="bg-[#1e3a8a] text-white p-4 shadow-lg flex justify-between items-center relative z-20">
-        <div class="flex items-center space-x-4">
-            <img id="nav-logo" src="https://via.placeholder.com/150?text=LOGO" alt="School Logo" class="h-12 w-12 object-contain bg-white rounded-full p-1 shadow-md">
-            <h1 class="text-2xl font-extrabold tracking-wide drop-shadow-md">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
-        </div>
-        <button onclick="adminLogin()" class="bg-[#1e40af] hover:bg-[#1d4ed8] border border-blue-400 px-5 py-2 rounded-lg font-semibold transition shadow text-sm">⚙️ Admin Panel</button>
-    </nav>
-
-    <div class="max-w-[95%] mx-auto mt-8 mb-10 p-8 bg-white shadow-2xl rounded-xl border border-slate-200 relative">
-        
-        <div id="loading-screen" class="text-center py-20 text-blue-900 font-bold text-2xl animate-pulse">
-            Connecting to Secure Database...
-        </div>
-
-        <div id="teacher-login-section" class="hidden flex flex-col items-center py-16">
-            <h2 class="text-4xl font-extrabold text-slate-800 mb-2">Teacher Portal</h2>
-            <p class="text-slate-500 mb-10 text-lg">Select your class and examination term to manage results.</p>
-            
-            <div class="bg-slate-50 p-8 rounded-2xl shadow-inner border border-slate-200 w-full max-w-4xl flex flex-col md:flex-row justify-center gap-6 mb-8">
-                <select id="academic-year" class="p-4 border-2 border-slate-300 rounded-lg shadow-sm text-lg font-medium focus:border-blue-500 focus:ring-0 outline-none">
-                    <option value="2026-27">2026-27</option>
-                    <option value="2025-26">2025-26 (Historical)</option>
-                </select>
-                <select id="exam-term" class="p-4 border-2 border-slate-300 rounded-lg shadow-sm text-lg font-medium focus:border-blue-500 focus:ring-0 outline-none">
-                    <option value="PT1">PT 1 Exam (40 Marks)</option>
-                    <option value="HalfYearly">Half Yearly Exam (80 Marks)</option>
-                    <option value="PT2">PT 2 Exam (40 Marks)</option>
-                    <option value="Final">Final Year Exam (100 Marks)</option>
-                </select>
-                <select id="class-select" class="p-4 border-2 border-slate-300 rounded-lg shadow-sm text-lg font-medium focus:border-blue-500 focus:ring-0 outline-none w-72">
-                    <option value="">-- Select Class --</option>
-                </select>
+    <div id="teacher-portal" class="fixed inset-0 bg-slate-100 z-50 overflow-y-auto flex flex-col">
+        <nav class="bg-[#1e3a8a] text-white p-4 shadow-md flex justify-between items-center shrink-0">
+            <div class="flex items-center space-x-4">
+                <img id="public-logo" src="https://via.placeholder.com/150?text=LOGO" class="h-10 w-10 bg-white rounded-full p-1 shadow">
+                <h1 class="text-xl font-bold tracking-wide">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
             </div>
-            <button onclick="loadClassData()" class="bg-[#16a34a] hover:bg-[#15803d] text-white px-12 py-4 rounded-xl font-bold text-xl shadow-lg transition transform hover:-translate-y-1">Enter Class Dashboard</button>
+            <button onclick="showAdminLogin()" class="bg-blue-600 hover:bg-blue-500 px-4 py-2 rounded text-sm font-bold shadow transition">⚙️ Admin Access</button>
+        </nav>
+
+        <div id="teacher-login-box" class="flex-1 flex flex-col items-center justify-center p-6">
+            <div class="bg-white p-10 rounded-2xl shadow-xl border border-slate-200 w-full max-w-2xl text-center">
+                <h2 class="text-3xl font-extrabold text-[#1e3a8a] mb-2">Teacher Portal</h2>
+                <p class="text-slate-500 mb-8">Select your class to manage exam results.</p>
+                
+                <div class="grid grid-cols-1 gap-4 mb-8">
+                    <select id="teacher-year" class="p-3 border rounded-lg bg-slate-50 font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="2026-27">Academic Year 2026-27</option>
+                        <option value="2025-26">Academic Year 2025-26</option>
+                    </select>
+                    <select id="teacher-term" class="p-3 border rounded-lg bg-slate-50 font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="PT1">PT 1 Exam</option>
+                        <option value="HalfYearly">Half Yearly Exam</option>
+                        <option value="PT2">PT 2 Exam</option>
+                        <option value="Final">Final Year Exam</option>
+                    </select>
+                    <select id="teacher-class" class="p-3 border rounded-lg bg-slate-50 font-medium outline-none focus:ring-2 focus:ring-blue-500">
+                        <option value="">-- Select Class --</option>
+                    </select>
+                </div>
+                <button onclick="teacherLogin()" class="w-full bg-[#16a34a] hover:bg-[#15803d] text-white py-4 rounded-xl font-bold text-lg shadow transition">Enter Dashboard</button>
+            </div>
         </div>
 
-        <div id="teacher-dashboard" class="hidden">
-            <div class="flex justify-between items-end mb-6 border-b-2 border-slate-100 pb-4">
+        <div id="teacher-data-grid" class="hidden flex-1 flex flex-col p-6 max-w-7xl mx-auto w-full">
+            <div class="flex justify-between items-end mb-4 border-b pb-4 shrink-0">
                 <div>
-                    <h2 id="dashboard-title" class="text-3xl font-extrabold text-[#1e3a8a]"></h2>
-                    <p class="text-slate-500 font-medium mt-1">Fill in the marks below. Ranks and percentages calculate automatically.</p>
+                    <h2 id="teacher-dashboard-title" class="text-2xl font-extrabold text-[#1e3a8a]">Class Data</h2>
+                    <p class="text-slate-500 font-medium text-sm mt-1">Status: <span id="teacher-status-badge" class="font-bold text-yellow-600">Draft Mode</span></p>
                 </div>
-                <div class="flex items-center space-x-3">
-                    <span id="save-status" class="text-sm font-bold text-slate-400 mr-4 flex items-center">
-                        <span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> System Ready
-                    </span>
-                    <button onclick="saveToFirebase()" class="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-5 py-2.5 rounded-lg font-bold shadow transition flex items-center gap-2">💾 Save to Cloud</button>
-                    <button onclick="exportToExcel()" class="bg-[#10b981] hover:bg-[#059669] text-white px-5 py-2.5 rounded-lg font-bold shadow transition flex items-center gap-2">⬇️ Download Excel</button>
-                    <button onclick="location.reload()" class="bg-slate-600 hover:bg-slate-700 text-white px-5 py-2.5 rounded-lg font-bold shadow transition">Logout</button>
+                <div class="flex gap-3">
+                    <button onclick="saveTeacherData('draft')" class="bg-slate-200 hover:bg-slate-300 text-slate-800 px-4 py-2 rounded-lg font-bold shadow-sm transition">💾 Save Draft</button>
+                    <button onclick="saveTeacherData('submitted')" class="bg-green-600 hover:bg-green-700 text-white px-4 py-2 rounded-lg font-bold shadow transition">✅ Submit Final</button>
+                    <button onclick="teacherExportExcel()" class="bg-blue-600 hover:bg-blue-700 text-white px-4 py-2 rounded-lg font-bold shadow transition">⬇️ Excel</button>
+                    <button onclick="location.reload()" class="bg-slate-700 hover:bg-slate-800 text-white px-4 py-2 rounded-lg font-bold shadow transition">Logout</button>
                 </div>
             </div>
-
-            <div class="overflow-x-auto rounded-xl shadow-[0_0_15px_rgba(0,0,0,0.1)] mb-6 border border-slate-300">
-                <table class="w-full text-sm text-left whitespace-nowrap bg-white">
-                    <thead class="text-xs uppercase tracking-wider" id="table-head"></thead>
-                    <tbody id="table-body" class="divide-y divide-slate-200"></tbody>
+            <div class="overflow-auto bg-white rounded-xl shadow border border-slate-200 flex-1 mb-4">
+                <table class="w-full text-sm text-left whitespace-nowrap">
+                    <thead id="teacher-table-head" class="bg-[#1e3a8a] text-white text-xs uppercase tracking-wider sticky top-0 z-10"></thead>
+                    <tbody id="teacher-table-body" class="divide-y divide-slate-200"></tbody>
                 </table>
             </div>
-            <button onclick="addStudentRow()" class="bg-blue-50 text-blue-700 border-2 border-blue-200 px-6 py-2.5 rounded-lg font-bold hover:bg-blue-100 transition shadow-sm flex items-center gap-2">+ Add New Student Row</button>
+            <button onclick="teacherAddRow()" class="shrink-0 bg-blue-50 text-blue-700 border-2 border-blue-200 px-6 py-2 rounded-lg font-bold hover:bg-blue-100 transition shadow-sm w-48">+ Add Student Row</button>
+        </div>
+    </div>
+
+
+    <div id="admin-portal" class="hidden h-full flex flex-col w-full">
+        <div class="bg-[#0f172a] text-white h-16 flex items-center justify-between px-6 shrink-0 shadow-md z-20">
+            <div class="flex items-center gap-3">
+                <div class="bg-yellow-500 text-slate-900 font-black text-xs px-2 py-1 rounded">ADM</div>
+                <h1 class="font-bold text-lg tracking-wide">Admin Dashboard <span class="text-slate-400 font-normal text-sm ml-2 hidden md:inline">| NWW Ravenwood Result System</span></h1>
+            </div>
+            <div class="flex gap-3 items-center">
+                <select id="admin-year" onchange="loadAdminOverview()" class="bg-slate-800 text-white border border-slate-600 text-sm rounded px-2 py-1 outline-none"><option value="2026-27">2026-27</option><option value="2025-26">2025-26</option></select>
+                <select id="admin-term" onchange="loadAdminOverview()" class="bg-slate-800 text-white border border-slate-600 text-sm rounded px-2 py-1 outline-none"><option value="PT1">PT 1</option><option value="HalfYearly">Half Yearly</option><option value="PT2">PT 2</option><option value="Final">Final</option></select>
+                <button onclick="adminDownloadMasterExcel()" class="bg-yellow-500 hover:bg-yellow-400 text-slate-900 text-sm font-bold px-4 py-1.5 rounded shadow transition">⬇️ Download All Excel</button>
+                <button onclick="location.reload()" class="bg-slate-700 hover:bg-slate-600 text-white text-sm font-bold px-4 py-1.5 rounded shadow transition">Sign Out</button>
+            </div>
         </div>
 
-        <div id="admin-dashboard" class="hidden absolute top-0 left-0 w-full min-h-full bg-slate-50 z-30 p-10 rounded-xl overflow-y-auto">
-            <div class="flex justify-between items-center mb-8 bg-white p-6 rounded-xl shadow-sm border border-slate-200">
-                <h2 class="text-4xl font-extrabold text-[#1e3a8a] flex items-center gap-3">⚙️ Master Admin Panel</h2>
-                <div class="space-x-4">
-                    <button onclick="downloadMasterExcel()" class="bg-[#10b981] hover:bg-[#059669] text-white px-6 py-3 rounded-lg font-bold shadow-md transition text-lg">⬇️ Download Full School Excel</button>
-                    <button onclick="closeAdmin()" class="bg-rose-500 hover:bg-rose-600 text-white px-6 py-3 rounded-lg font-bold shadow-md transition text-lg">Exit Admin</button>
+        <div class="flex flex-1 overflow-hidden">
+            <div class="w-64 bg-white border-r border-slate-200 flex flex-col shadow-sm z-10">
+                <div class="p-4 border-b">
+                    <p class="text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Navigation</p>
+                    <button onclick="showAdminView('overview')" class="w-full text-left px-3 py-2 rounded font-bold text-blue-700 bg-blue-50 flex items-center gap-2 mb-1" id="nav-overview">📊 Overview</button>
+                    <button onclick="showAdminView('settings')" class="w-full text-left px-3 py-2 rounded font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2" id="nav-settings">⚙️ Global Settings</button>
+                </div>
+                <div class="p-4 flex-1 overflow-y-auto">
+                    <div class="flex justify-between items-center mb-2">
+                        <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Configure Classes</p>
+                        <button onclick="createNewClass()" class="text-blue-600 font-black hover:text-blue-800" title="Create New Class">+</button>
+                    </div>
+                    <ul id="admin-sidebar-classes" class="space-y-1">
+                        </ul>
                 </div>
             </div>
 
-            <div class="grid grid-cols-1 md:grid-cols-4 gap-6 mb-8">
-                <div class="bg-white p-6 rounded-xl border-b-4 border-blue-600 shadow-sm">
-                    <p class="text-sm text-slate-500 font-bold uppercase tracking-wide">Total Classes</p>
-                    <p class="text-4xl font-black text-blue-900 mt-2" id="stat-total-classes">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl border-b-4 border-green-600 shadow-sm">
-                    <p class="text-sm text-slate-500 font-bold uppercase tracking-wide">Submitted Sheets</p>
-                    <p class="text-4xl font-black text-green-700 mt-2" id="stat-active-sheets">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl border-b-4 border-purple-600 shadow-sm">
-                    <p class="text-sm text-slate-500 font-bold uppercase tracking-wide">Students Saved</p>
-                    <p class="text-4xl font-black text-purple-900 mt-2" id="stat-total-students">0</p>
-                </div>
-                <div class="bg-white p-6 rounded-xl border-b-4 border-yellow-500 shadow-sm">
-                    <p class="text-sm text-slate-500 font-bold uppercase tracking-wide">Viewing Term</p>
-                    <p class="text-2xl font-black text-yellow-700 mt-2" id="stat-current-term">...</p>
-                </div>
-            </div>
+            <div class="flex-1 bg-slate-50 overflow-y-auto p-8" id="admin-main-content">
+                
+                <div id="view-overview">
+                    <h2 class="text-2xl font-black text-slate-800 mb-1">School Overview</h2>
+                    <p class="text-slate-500 mb-6 text-sm" id="overview-subtitle">Loading data...</p>
 
-            <div class="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                    <h3 class="text-2xl font-bold mb-6 text-slate-800 border-b-2 pb-3">Class Submission Status</h3>
-                    <div class="overflow-y-auto max-h-96 pr-2">
-                        <table class="w-full text-left">
-                            <thead class="bg-slate-100 text-slate-600 font-bold uppercase text-xs">
-                                <tr>
-                                    <th class="p-3 rounded-tl-lg">Class Name</th>
-                                    <th class="p-3">Status</th>
-                                    <th class="p-3">Students</th>
-                                    <th class="p-3 rounded-tr-lg">Action</th>
-                                </tr>
-                            </thead>
-                            <tbody id="admin-status-table" class="divide-y divide-slate-100"></tbody>
-                        </table>
-                    </div>
-                </div>
-
-                <div class="bg-white p-8 rounded-xl border border-slate-200 shadow-sm">
-                    <div class="flex justify-between items-center mb-6 border-b-2 pb-3">
-                        <h3 class="text-2xl font-bold text-slate-800">System Settings</h3>
-                        <button onclick="saveAdminConfig()" class="bg-[#2563eb] hover:bg-[#1d4ed8] text-white px-5 py-2 rounded-lg font-bold shadow transition">💾 Save All Settings</button>
-                    </div>
-
-                    <div class="mb-8 bg-blue-50 p-4 rounded-lg border border-blue-100">
-                        <h4 class="font-bold text-blue-900 mb-2">School Logo (Website & Excel)</h4>
-                        <p class="text-xs text-blue-700 mb-3">Upload a square image (PNG/JPG). Recommended size: 200x200px.</p>
-                        <input type="file" id="logo-upload" accept="image/png, image/jpeg" onchange="handleLogoUpload(event)" class="text-sm w-full bg-white p-2 rounded border">
-                        <div class="mt-3 flex items-center gap-4">
-                            <span class="text-sm font-semibold text-slate-600">Current Logo:</span>
-                            <img id="admin-logo-preview" src="" class="h-16 w-16 object-contain rounded border bg-white hidden">
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mb-8">
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Total Classes</p>
+                            <p class="text-4xl font-black text-slate-800 mt-1" id="stat-total">0</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-green-500">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Submitted Final</p>
+                            <p class="text-4xl font-black text-green-600 mt-1" id="stat-submitted">0</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-yellow-500">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">In Progress (Draft)</p>
+                            <p class="text-4xl font-black text-yellow-600 mt-1" id="stat-progress">0</p>
+                        </div>
+                        <div class="bg-white p-5 rounded-xl border border-slate-200 shadow-sm border-t-4 border-t-red-500">
+                            <p class="text-xs font-bold text-slate-400 uppercase tracking-wider">Pending (Empty)</p>
+                            <p class="text-4xl font-black text-red-500 mt-1" id="stat-pending">0</p>
                         </div>
                     </div>
-                    
-                    <div class="mb-6">
-                        <h4 class="font-bold text-slate-700 mb-2">Manage Classes</h4>
-                        <div class="flex gap-2 mb-3">
-                            <input type="text" id="new-class-input" placeholder="e.g. VI-Newton" class="border-2 p-2.5 w-full rounded-lg focus:border-blue-500 outline-none font-medium">
-                            <button onclick="addClass()" class="bg-slate-800 text-white px-6 rounded-lg font-bold hover:bg-slate-700">Add</button>
-                        </div>
-                        <div id="admin-class-list" class="flex flex-wrap gap-2 max-h-32 overflow-y-auto"></div>
-                    </div>
 
-                    <div class="mb-6 pt-6 border-t border-slate-200">
-                        <h4 class="font-bold text-slate-700 mb-2">Numeric Subjects (Maths, EVS, etc.)</h4>
-                        <div class="flex gap-2 mb-3">
-                            <input type="text" id="new-num-sub" placeholder="e.g. Science" class="border-2 p-2.5 w-full rounded-lg focus:border-blue-500 outline-none font-medium">
-                            <button onclick="addSubject('numeric')" class="bg-blue-600 text-white px-6 rounded-lg font-bold hover:bg-blue-700">Add</button>
+                    <div class="bg-white rounded-xl border border-slate-200 shadow-sm overflow-hidden">
+                        <div class="bg-slate-50 border-b px-6 py-4"><h3 class="font-bold text-slate-700">Submission Status Tracker</h3></div>
+                        <div class="overflow-x-auto">
+                            <table class="w-full text-left text-sm whitespace-nowrap">
+                                <thead class="text-xs font-bold text-slate-500 uppercase bg-white border-b">
+                                    <tr><th class="px-6 py-4">Class ID</th><th class="px-6 py-4 text-center">Students</th><th class="px-6 py-4">Status</th><th class="px-6 py-4">Last Updated</th><th class="px-6 py-4 text-right">Actions</th></tr>
+                                </thead>
+                                <tbody id="admin-status-table" class="divide-y divide-slate-100"></tbody>
+                            </table>
                         </div>
-                        <div id="admin-num-sub-list" class="flex flex-wrap gap-2"></div>
-                    </div>
-
-                    <div class="pt-6 border-t border-slate-200">
-                        <h4 class="font-bold text-slate-700 mb-2">Grading Subjects (Art, Music, etc.)</h4>
-                        <div class="flex gap-2 mb-3">
-                            <input type="text" id="new-grad-sub" placeholder="e.g. Yoga" class="border-2 p-2.5 w-full rounded-lg focus:border-purple-500 outline-none font-medium">
-                            <button onclick="addSubject('grading')" class="bg-purple-600 text-white px-6 rounded-lg font-bold hover:bg-purple-700">Add</button>
-                        </div>
-                        <div id="admin-grad-sub-list" class="flex flex-wrap gap-2"></div>
                     </div>
                 </div>
+
+                <div id="view-settings" class="hidden max-w-2xl">
+                    <h2 class="text-2xl font-black text-slate-800 mb-6">Global Settings</h2>
+                    <div class="bg-white p-6 rounded-xl border shadow-sm">
+                        <h3 class="font-bold text-slate-800 mb-2">School Logo</h3>
+                        <p class="text-sm text-slate-500 mb-4">This logo appears on the Teacher Portal and all Excel downloads.</p>
+                        <input type="file" accept="image/*" onchange="uploadLogo(event)" class="mb-4 block w-full text-sm text-slate-500 file:mr-4 file:py-2 file:px-4 file:rounded-full file:border-0 file:text-sm file:font-semibold file:bg-blue-50 file:text-blue-700 hover:file:bg-blue-100">
+                        <img id="settings-logo-preview" src="" class="h-20 w-20 object-contain rounded border p-1 hidden">
+                    </div>
+                </div>
+
+                <div id="view-class-config" class="hidden max-w-4xl">
+                    <div class="flex justify-between items-center mb-6">
+                        <div>
+                            <h2 class="text-2xl font-black text-slate-800" id="config-class-title">Class Config</h2>
+                            <p class="text-slate-500 text-sm">Manage subjects and maximum marks specifically for this class.</p>
+                        </div>
+                        <button onclick="deleteCurrentClass()" class="bg-red-100 text-red-700 hover:bg-red-200 px-4 py-2 rounded font-bold text-sm transition border border-red-200">🗑️ Delete Entire Class</button>
+                    </div>
+
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+                        <div class="bg-white p-6 rounded-xl border border-blue-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-blue-500"></div>
+                            <h3 class="font-black text-slate-800 mb-1 text-lg">Numeric Subjects</h3>
+                            <p class="text-xs text-slate-500 mb-4">Subjects included in Total & Percentage (e.g., Maths, Science).</p>
+                            
+                            <div class="flex gap-2 mb-4 bg-slate-50 p-3 rounded border">
+                                <input type="text" id="add-num-name" placeholder="Subject Name" class="flex-1 border p-2 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500">
+                                <input type="number" id="add-num-max" placeholder="Max" class="w-20 border p-2 rounded text-sm outline-none focus:ring-1 focus:ring-blue-500" title="Maximum Marks">
+                                <button onclick="addClassSubject('numeric')" class="bg-blue-600 text-white px-3 rounded font-bold text-sm hover:bg-blue-700">Add</button>
+                            </div>
+
+                            <ul id="config-num-list" class="space-y-2 max-h-80 overflow-y-auto pr-2"></ul>
+                        </div>
+
+                        <div class="bg-white p-6 rounded-xl border border-purple-200 shadow-sm relative overflow-hidden">
+                            <div class="absolute top-0 left-0 w-full h-1 bg-purple-500"></div>
+                            <h3 class="font-black text-slate-800 mb-1 text-lg">Grading Subjects</h3>
+                            <p class="text-xs text-slate-500 mb-4">Subjects receiving direct letter grades (A, B, C). Ignored in math calculation.</p>
+                            
+                            <div class="flex gap-2 mb-4 bg-slate-50 p-3 rounded border">
+                                <input type="text" id="add-grad-name" placeholder="e.g., Art, Dance" class="flex-1 border p-2 rounded text-sm outline-none focus:ring-1 focus:ring-purple-500">
+                                <button onclick="addClassSubject('grading')" class="bg-purple-600 text-white px-3 rounded font-bold text-sm hover:bg-purple-700">Add</button>
+                            </div>
+
+                            <ul id="config-grad-list" class="space-y-2 max-h-80 overflow-y-auto pr-2"></ul>
+                        </div>
+                    </div>
+                </div>
+
             </div>
         </div>
     </div>
 
     <script>
-        const TERM_MAX_MARKS = { "PT1": 40, "HalfYearly": 80, "PT2": 40, "Final": 100 };
+        // --- GLOBAL STATE ---
+        let sysConfig = { classes: [], logoBase64: "" }; 
+        // classes array structure: { id: "Class I", numeric: [{name:"English", max:100}], grading: ["Art"] }
         
-        let sysConfig = {
-            classes: ["I-Daffodils", "V-MtBlanc"],
-            numericSubjects: ["English", "Hindi", "Punjabi", "Maths", "EVS", "ICT"],
-            gradingSubjects: ["Art", "Dance", "Music", "P.Edu"],
-            logoBase64: ""
-        };
-        
-        let currentState = { year: "", term: "", cls: "", students: [] };
-        let schoolMasterData = {};
+        let teacherState = { year: "", term: "", classId: "", classConfig: null, data: { students: [], status: "draft" } };
+        let adminState = { year: "", term: "", masterData: {}, activeConfigClassId: null };
 
+        // --- INIT ---
         async function initApp() {
             try {
-                const docRef = window.doc(window.db, "settings", "global_config");
-                const docSnap = await window.getDoc(docRef);
-                
-                if (docSnap.exists()) {
-                    sysConfig = { ...sysConfig, ...docSnap.data() };
-                } else {
-                    await window.setDoc(docRef, sysConfig);
+                const docSnap = await window.getDoc(window.doc(window.db, "settings", "global_config"));
+                if (docSnap.exists()) { sysConfig = docSnap.data(); } 
+                else { 
+                    // Seed initial data if blank database
+                    sysConfig = { classes: [{ id: "Class I-Daffodils", numeric: [{name:"English", max:100}, {name:"Maths", max:100}], grading: ["Art", "Dance"] }], logoBase64: "" };
+                    await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
                 }
-                
-                if(sysConfig.logoBase64) {
-                    document.getElementById('nav-logo').src = sysConfig.logoBase64;
-                    document.getElementById('admin-logo-preview').src = sysConfig.logoBase64;
-                    document.getElementById('admin-logo-preview').classList.remove('hidden');
-                }
+                updateLogos();
+                populateTeacherClassDropdown();
+            } catch (e) { alert("Initialization Error: " + e.message); }
+        }
 
-                const classSelect = document.getElementById('class-select');
-                classSelect.innerHTML = '<option value="">-- Select Class --</option>';
-                sysConfig.classes.forEach(c => {
-                    classSelect.innerHTML += `<option value="${c}">${c.replace('-', ' ')}</option>`;
-                });
-
-                document.getElementById('loading-screen').classList.add('hidden');
-                document.getElementById('teacher-login-section').classList.remove('hidden');
-                document.getElementById('teacher-login-section').classList.add('flex');
-            } catch (error) {
-                alert("Database Connection Error. Refresh page.");
+        function updateLogos() {
+            if(sysConfig.logoBase64) {
+                document.getElementById('public-logo').src = sysConfig.logoBase64;
+                document.getElementById('settings-logo-preview').src = sysConfig.logoBase64;
+                document.getElementById('settings-logo-preview').classList.remove('hidden');
             }
         }
 
-        // --- ADMIN PANEL FUNCTIONS ---
-        async function adminLogin() {
-            const pwd = prompt("Enter Master Admin Password:");
-            if(pwd === "Admin@Ravenwood2025") {
-                document.getElementById('teacher-login-section').classList.add('hidden');
-                document.getElementById('teacher-login-section').classList.remove('flex');
-                document.getElementById('teacher-dashboard').classList.add('hidden');
-                document.getElementById('admin-dashboard').classList.remove('hidden');
-                
-                let year = document.getElementById('academic-year').value;
-                let term = document.getElementById('exam-term').value;
-                document.getElementById('stat-current-term').innerText = `${term} (${year})`;
-                
-                await loadAdminStats(year, term);
-                renderAdminUI();
-            } else if (pwd) { alert("Incorrect Password."); }
+        // --- TEACHER LOGIC ---
+        function populateTeacherClassDropdown() {
+            const sel = document.getElementById('teacher-class');
+            sel.innerHTML = '<option value="">-- Select Class --</option>';
+            sysConfig.classes.forEach(c => sel.innerHTML += `<option value="${c.id}">${c.id.replace('-', ' ')}</option>`);
         }
 
-        function closeAdmin() { location.reload(); }
-
-        function handleLogoUpload(event) {
-            const file = event.target.files[0];
-            if (file) {
-                const reader = new FileReader();
-                reader.onload = function(e) {
-                    sysConfig.logoBase64 = e.target.result;
-                    document.getElementById('admin-logo-preview').src = e.target.result;
-                    document.getElementById('admin-logo-preview').classList.remove('hidden');
-                    document.getElementById('nav-logo').src = e.target.result; 
-                }
-                reader.readAsDataURL(file);
-            }
-        }
-
-        async function loadAdminStats(year, term) {
-            schoolMasterData = {};
-            let totalStudents = 0, activeSheets = 0;
-            const querySnapshot = await window.getDocs(window.collection(window.db, `results_${year}`));
+        async function teacherLogin() {
+            teacherState.year = document.getElementById('teacher-year').value;
+            teacherState.term = document.getElementById('teacher-term').value;
+            teacherState.classId = document.getElementById('teacher-class').value;
             
-            querySnapshot.forEach((doc) => {
-                if(doc.id.startsWith(term + "_")) {
-                    let className = doc.id.replace(term + "_", "");
-                    let data = doc.data();
-                    schoolMasterData[className] = data.students;
-                    totalStudents += data.students.length;
-                    activeSheets++;
-                }
-            });
+            if(!teacherState.classId) return alert("Select a class.");
 
-            document.getElementById('stat-total-classes').innerText = sysConfig.classes.length;
-            document.getElementById('stat-active-sheets').innerText = activeSheets;
-            document.getElementById('stat-total-students').innerText = totalStudents;
+            // Find specific config for this class
+            teacherState.classConfig = sysConfig.classes.find(c => c.id === teacherState.classId);
 
-            // Updated Admin Status Table with Action Buttons
-            let tableHTML = "";
-            sysConfig.classes.forEach(c => {
-                let hasData = schoolMasterData[c] && schoolMasterData[c].length > 0;
-                let statusBadge = hasData ? `<span class="bg-green-100 text-green-800 px-3 py-1 rounded-full text-xs font-black">SUBMITTED</span>` : `<span class="bg-rose-100 text-rose-800 px-3 py-1 rounded-full text-xs font-black">PENDING</span>`;
-                let stuCount = hasData ? schoolMasterData[c].length : 0;
+            document.getElementById('teacher-login-box').classList.add('hidden');
+            document.getElementById('teacher-data-grid').classList.remove('hidden');
+            document.getElementById('teacher-data-grid').classList.add('flex');
+            document.getElementById('teacher-dashboard-title').innerText = `${teacherState.classId.replace('-', ' ')} | ${teacherState.term}`;
+
+            const docSnap = await window.getDoc(window.doc(window.db, `results_${teacherState.year}`, `${teacherState.term}_${teacherState.classId}`));
+            if (docSnap.exists()) { teacherState.data = docSnap.data(); } 
+            else { teacherState.data = { students: [{ roll: 1, name: "", marks: {}, grades: {} }], status: "draft" }; }
+            
+            renderTeacherTable();
+        }
+
+        function renderTeacherTable() {
+            calculateTeacherMath();
+            let c = teacherState.classConfig;
+            let badge = document.getElementById('teacher-status-badge');
+            if(teacherState.data.status === 'submitted') { badge.innerText = "Final Submitted"; badge.className = "font-bold text-green-600"; }
+            else { badge.innerText = "Draft Mode"; badge.className = "font-bold text-yellow-600"; }
+
+            // Dynamic Headers based on Class Config
+            let headHTML = `<tr><th class="px-3 py-3 text-center border-r border-[#3b82f6]">Roll</th><th class="px-4 py-3 border-r border-[#3b82f6]">Student Name</th>`;
+            c.numeric.forEach(sub => headHTML += `<th class="px-3 py-3 text-center border-r border-[#3b82f6]">${sub.name}<br><span class="text-[10px] text-blue-200 font-normal">Max ${sub.max}</span></th>`);
+            c.grading.forEach(sub => headHTML += `<th class="px-3 py-3 text-center bg-[#5b21b6] border-r border-[#7c3aed]">${sub}</th>`);
+            
+            let totalMax = c.numeric.reduce((sum, sub) => sum + parseInt(sub.max), 0);
+            headHTML += `<th class="px-3 py-3 text-[#fde047] text-center bg-[#0f172a] border-l-4 border-slate-300">Total<br><span class="text-[10px] text-slate-400 font-normal">Out of ${totalMax}</span></th>
+                         <th class="px-3 py-3 text-[#fde047] text-center bg-[#0f172a]">%age</th>
+                         <th class="px-3 py-3 text-[#fde047] text-center bg-[#0f172a]">Grade</th>
+                         <th class="px-3 py-3 text-[#fde047] text-center bg-[#0f172a]">Rank</th></tr>`;
+            document.getElementById('teacher-table-head').innerHTML = headHTML;
+
+            // Rows
+            let bodyHTML = "";
+            teacherState.data.students.forEach((s, index) => {
+                bodyHTML += `<tr class="hover:bg-blue-50 transition-colors">
+                    <td class="px-1 py-1 border-r border-slate-200"><input type="number" value="${s.roll || index + 1}" onchange="tUpdate(${index}, 'roll', this.value)" class="table-input text-slate-700"></td>
+                    <td class="px-1 py-1 border-r border-slate-200"><input type="text" value="${s.name || ''}" onchange="tUpdate(${index}, 'name', this.value)" class="table-input text-left px-2 min-w-[150px]"></td>`;
                 
-                let actionBtn = hasData ? `<button onclick="downloadAdminSingleExcel('${c}')" class="bg-emerald-500 hover:bg-emerald-600 text-white px-3 py-1.5 rounded-lg text-xs font-bold shadow transition">⬇️ Excel</button>` : `<span class="text-slate-400 text-xs italic">No Data</span>`;
-
-                tableHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100"><td class="p-3 font-bold text-slate-700">${c}</td><td class="p-3">${statusBadge}</td><td class="p-3 font-semibold text-slate-500">${stuCount}</td><td class="p-3">${actionBtn}</td></tr>`;
-            });
-            document.getElementById('admin-status-table').innerHTML = tableHTML;
-        }
-
-        function renderAdminUI() {
-            document.getElementById('admin-class-list').innerHTML = sysConfig.classes.map((c, i) => `<span class="bg-slate-200 text-slate-800 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2 border">${c} <button onclick="deleteItem('classes', ${i})" class="text-rose-500 hover:text-rose-700">X</button></span>`).join('');
-            document.getElementById('admin-num-sub-list').innerHTML = sysConfig.numericSubjects.map((sub, i) => `<span class="bg-blue-100 text-blue-800 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">${sub} <button onclick="deleteItem('numericSubjects', ${i})" class="text-blue-500">X</button></span>`).join('');
-            document.getElementById('admin-grad-sub-list').innerHTML = sysConfig.gradingSubjects.map((sub, i) => `<span class="bg-purple-100 text-purple-800 px-3 py-1.5 rounded-lg text-sm font-bold flex items-center gap-2">${sub} <button onclick="deleteItem('gradingSubjects', ${i})" class="text-purple-500">X</button></span>`).join('');
-        }
-
-        function addClass() { let v = document.getElementById('new-class-input').value.trim(); if(v && !sysConfig.classes.includes(v)) { sysConfig.classes.push(v); document.getElementById('new-class-input').value = ''; renderAdminUI(); } }
-        function addSubject(t) { let id = t==='numeric'?'new-num-sub':'new-grad-sub'; let arr = t==='numeric'?'numericSubjects':'gradingSubjects'; let v = document.getElementById(id).value.trim(); if(v && !sysConfig[arr].includes(v)) { sysConfig[arr].push(v); document.getElementById(id).value = ''; renderAdminUI(); } }
-        function deleteItem(arr, i) { sysConfig[arr].splice(i, 1); renderAdminUI(); }
-
-        async function saveAdminConfig() {
-            try {
-                await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
-                alert("Settings Saved Successfully!");
-            } catch (e) { alert("Error saving: " + e.message); }
-        }
-
-        // --- MATH ENGINE ---
-        function calculateGradesAndRanks() {
-            let maxPerSubject = TERM_MAX_MARKS[currentState.term] || 100;
-            let totalMax = maxPerSubject * sysConfig.numericSubjects.length;
-
-            currentState.students.forEach(s => {
-                let total = 0, subjectsFilled = 0;
-                sysConfig.numericSubjects.forEach(sub => {
-                    let mark = parseFloat(s.marks[sub]);
-                    if (!isNaN(mark)) { total += mark; subjectsFilled++; }
+                c.numeric.forEach(sub => {
+                    let val = s.marks[sub.name] || '';
+                    bodyHTML += `<td class="px-1 py-1 border-r border-slate-200"><input type="number" value="${val}" max="${sub.max}" onchange="tUpdate(${index}, 'marks', this.value, '${sub.name}')" class="table-input"></td>`;
                 });
 
-                if (subjectsFilled === sysConfig.numericSubjects.length && sysConfig.numericSubjects.length > 0) {
+                c.grading.forEach(sub => {
+                    let val = s.grades[sub] || '';
+                    bodyHTML += `<td class="px-1 py-1 border-r border-slate-200"><input type="text" maxlength="2" value="${val}" onchange="tUpdate(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="table-input uppercase text-purple-700"></td>`;
+                });
+
+                bodyHTML += `<td class="px-3 py-2 font-black text-center bg-green-50 border-l-4 border-slate-300 text-base">${s.total || ''}</td>
+                             <td class="px-3 py-2 font-black text-center bg-green-50 text-base">${s.percentage || ''}</td>
+                             <td class="px-3 py-2 font-black text-center bg-green-50 text-blue-600 text-lg">${s.grade || ''}</td>
+                             <td class="px-3 py-2 font-black text-center bg-green-50 text-red-600 text-lg">${s.rank || ''}</td></tr>`;
+            });
+            document.getElementById('teacher-table-body').innerHTML = bodyHTML;
+        }
+
+        function tUpdate(index, field, value, subField = null) {
+            teacherState.data.status = 'draft'; // Revert to draft if modified
+            if (subField) {
+                if (!teacherState.data.students[index][field]) teacherState.data.students[index][field] = {};
+                teacherState.data.students[index][field][subField] = value;
+            } else { teacherState.data.students[index][field] = value; }
+            renderTeacherTable();
+        }
+
+        function teacherAddRow() { teacherState.data.students.push({ roll: teacherState.data.students.length + 1, name: "", marks: {}, grades: {} }); renderTeacherTable(); }
+
+        function calculateTeacherMath() {
+            let c = teacherState.classConfig;
+            let totalMax = c.numeric.reduce((sum, sub) => sum + parseInt(sub.max), 0);
+
+            teacherState.data.students.forEach(s => {
+                let total = 0, filled = 0;
+                c.numeric.forEach(sub => {
+                    let mark = parseFloat(s.marks[sub.name]);
+                    if (!isNaN(mark)) { total += mark; filled++; }
+                });
+
+                if (filled === c.numeric.length && c.numeric.length > 0) {
                     s.total = total; s.percentage = parseFloat(((total / totalMax) * 100).toFixed(2));
                     let p = s.percentage;
-                    if(p >= 91) s.grade = "A1"; else if(p >= 81) s.grade = "A2";
-                    else if(p >= 71) s.grade = "B1"; else if(p >= 61) s.grade = "B2";
-                    else if(p >= 51) s.grade = "C1"; else if(p >= 41) s.grade = "C2";
-                    else if(p >= 33) s.grade = "D"; else s.grade = "E";
+                    if(p >= 91) s.grade = "A1"; else if(p >= 81) s.grade = "A2"; else if(p >= 71) s.grade = "B1"; else if(p >= 61) s.grade = "B2";
+                    else if(p >= 51) s.grade = "C1"; else if(p >= 41) s.grade = "C2"; else if(p >= 33) s.grade = "D"; else s.grade = "E";
                 } else { s.total = "Inc"; s.percentage = "Inc"; s.grade = ""; s.rank = ""; }
             });
 
-            let validStudents = currentState.students.filter(s => s.percentage !== "Inc");
-            let uniqueScores = [...new Set(validStudents.map(s => s.percentage))].sort((a, b) => b - a);
+            let valid = teacherState.data.students.filter(s => s.percentage !== "Inc");
+            let uniqueScores = [...new Set(valid.map(s => s.percentage))].sort((a, b) => b - a);
 
-            currentState.students.forEach(s => {
+            teacherState.data.students.forEach(s => {
                 if (s.percentage !== "Inc") {
                     let r = uniqueScores.indexOf(s.percentage) + 1;
                     if(r===1) s.rank = "1st"; else if(r===2) s.rank = "2nd"; else if(r===3) s.rank = "3rd"; else if(r===4) s.rank = "4th"; else s.rank = ""; 
@@ -357,179 +364,248 @@
             });
         }
 
-        // --- TEACHER UI ---
-        async function loadClassData() {
-            currentState.year = document.getElementById('academic-year').value;
-            currentState.term = document.getElementById('exam-term').value;
-            currentState.cls = document.getElementById('class-select').value;
-            if(!currentState.cls) return alert("Select a class!");
-
-            document.getElementById('teacher-login-section').classList.add('hidden');
-            document.getElementById('teacher-login-section').classList.remove('flex');
-            document.getElementById('teacher-dashboard').classList.remove('hidden');
-            
-            let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
-            document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${termLabel}`;
-
-            const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
-            const docSnap = await window.getDoc(docRef);
-            if (docSnap.exists()) { currentState.students = docSnap.data().students || []; } 
-            else { currentState.students = [{ roll: 1, name: "", marks: {}, grades: {} }]; }
-            renderTable();
-        }
-
-        function renderTable() {
-            calculateGradesAndRanks();
-            
-            let headHTML = `<tr class="bg-[#1e3a8a] text-white">
-                <th class="px-4 py-4 text-center border-r border-[#3b82f6]">Roll</th>
-                <th class="px-4 py-4 border-r border-[#3b82f6]">Student Name</th>`;
-            
-            sysConfig.numericSubjects.forEach(sub => headHTML += `<th class="px-4 py-4 text-center border-r border-[#3b82f6]">${sub}</th>`);
-            sysConfig.gradingSubjects.forEach(sub => headHTML += `<th class="px-4 py-4 text-center bg-[#5b21b6] border-r border-[#7c3aed]">${sub}</th>`);
-            
-            headHTML += `<th class="px-4 py-4 text-[#fde047] text-center bg-[#0f172a] border-l-4 border-slate-300">Total</th>
-                         <th class="px-4 py-4 text-[#fde047] text-center bg-[#0f172a]">%age</th>
-                         <th class="px-4 py-4 text-[#fde047] text-center bg-[#0f172a]">Grade</th>
-                         <th class="px-4 py-4 text-[#fde047] text-center bg-[#0f172a]">Rank</th></tr>`;
-            
-            document.getElementById('table-head').innerHTML = headHTML;
-
-            let bodyHTML = "";
-            currentState.students.forEach((s, index) => {
-                bodyHTML += `<tr class="hover:bg-blue-50 transition-colors">
-                    <td class="px-2 py-2 border-r border-slate-200"><input type="number" value="${s.roll || index + 1}" onchange="updateData(${index}, 'roll', this.value)" class="table-input font-black text-slate-800"></td>
-                    <td class="px-2 py-2 border-r border-slate-200"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="table-input text-left px-2 w-full min-w-[180px]"></td>`;
-                
-                sysConfig.numericSubjects.forEach(sub => {
-                    let val = s.marks[sub] || '';
-                    bodyHTML += `<td class="px-2 py-2 border-r border-slate-200"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="table-input"></td>`;
-                });
-
-                sysConfig.gradingSubjects.forEach(sub => {
-                    let val = s.grades[sub] || '';
-                    bodyHTML += `<td class="px-2 py-2 border-r border-slate-200"><input type="text" maxlength="2" value="${val}" onchange="updateData(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="table-input uppercase font-bold text-purple-700"></td>`;
-                });
-
-                bodyHTML += `<td class="px-4 py-3 font-black text-center bg-green-50 border-l-4 border-slate-300 text-lg">${s.total || ''}</td>
-                             <td class="px-4 py-3 font-black text-center bg-green-50 text-lg">${s.percentage || ''}</td>
-                             <td class="px-4 py-3 font-black text-center bg-green-50 text-[#2563eb] text-xl">${s.grade || ''}</td>
-                             <td class="px-4 py-3 font-black text-center bg-green-50 text-[#dc2626] text-xl">${s.rank || ''}</td></tr>`;
-            });
-            document.getElementById('table-body').innerHTML = bodyHTML;
-        }
-
-        function updateData(index, field, value, subField = null) {
-            let status = document.getElementById('save-status');
-            status.innerHTML = `<span class="w-2 h-2 rounded-full bg-red-500 mr-2 animate-pulse"></span> Unsaved Changes`;
-            status.classList.replace('text-slate-400', 'text-rose-500');
-            
-            if (subField) {
-                if (!currentState.students[index][field]) currentState.students[index][field] = {};
-                currentState.students[index][field][subField] = value;
-            } else { currentState.students[index][field] = value; }
-            renderTable(); 
-        }
-
-        function addStudentRow() { currentState.students.push({ roll: currentState.students.length + 1, name: "", marks: {}, grades: {} }); renderTable(); }
-
-        async function saveToFirebase() {
-            let status = document.getElementById('save-status');
-            status.innerHTML = `<span class="w-2 h-2 rounded-full bg-yellow-500 mr-2"></span> Saving...`;
+        async function saveTeacherData(statusToSave) {
+            teacherState.data.status = statusToSave;
+            teacherState.data.lastUpdated = new Date().toISOString();
             try {
-                const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
-                await window.setDoc(docRef, { students: currentState.students, lastUpdated: new Date().toISOString() });
-                status.innerHTML = `<span class="w-2 h-2 rounded-full bg-green-500 mr-2"></span> All changes saved`;
-                status.classList.replace('text-rose-500', 'text-slate-400');
-            } catch (e) { status.innerHTML = `❌ Save Failed`; }
+                await window.setDoc(window.doc(window.db, `results_${teacherState.year}`, `${teacherState.term}_${teacherState.classId}`), teacherState.data);
+                alert(statusToSave === 'submitted' ? "Final Result Submitted to Admin!" : "Draft Saved Successfully.");
+                renderTeacherTable(); // Updates badge
+            } catch (e) { alert("Save Error: " + e.message); }
         }
 
-        // --- EXCEL GENERATOR LOGIC ---
-        async function exportToExcel() { await buildAndDownloadExcel(currentState.cls, currentState.students, false); }
-        async function downloadMasterExcel() {
-            if(Object.keys(schoolMasterData).length === 0) return alert("No data has been submitted yet!");
-            await buildAndDownloadExcel("Master", schoolMasterData, true);
+        // --- ADMIN PORTAL LOGIC ---
+        function showAdminLogin() {
+            if(prompt("Enter Admin Password:") === "Admin@Ravenwood2025") {
+                document.getElementById('teacher-portal').classList.add('hidden');
+                document.getElementById('admin-portal').classList.remove('hidden');
+                updateAdminSidebarClasses();
+                loadAdminOverview();
+            } else { alert("Incorrect"); }
         }
-        
-        // NEW: Function specifically for the Admin "Single Class" download button
-        async function downloadAdminSingleExcel(className) {
-            if(!schoolMasterData[className] || schoolMasterData[className].length === 0) {
-                return alert("No data found for this class.");
+
+        function updateAdminSidebarClasses() {
+            const ul = document.getElementById('admin-sidebar-classes');
+            ul.innerHTML = '';
+            sysConfig.classes.forEach(c => {
+                ul.innerHTML += `<li><button onclick="openClassConfig('${c.id}')" class="w-full text-left px-3 py-2 rounded text-sm font-semibold text-slate-600 hover:bg-blue-50 hover:text-blue-700 flex items-center before:content-[''] before:w-2 before:h-2 before:rounded-full before:bg-slate-300 before:mr-2">${c.id}</button></li>`;
+            });
+        }
+
+        function showAdminView(viewId) {
+            ['view-overview', 'view-settings', 'view-class-config'].forEach(id => document.getElementById(id).classList.add('hidden'));
+            document.getElementById(`view-${viewId}`).classList.remove('hidden');
+            
+            // UI styling for nav
+            document.getElementById('nav-overview').className = "w-full text-left px-3 py-2 rounded font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2 mb-1";
+            document.getElementById('nav-settings').className = "w-full text-left px-3 py-2 rounded font-bold text-slate-600 hover:bg-slate-50 flex items-center gap-2";
+            if(viewId==='overview') document.getElementById('nav-overview').classList.add('text-blue-700', 'bg-blue-50');
+            if(viewId==='settings') document.getElementById('nav-settings').classList.add('text-blue-700', 'bg-blue-50');
+        }
+
+        async function loadAdminOverview() {
+            showAdminView('overview');
+            adminState.year = document.getElementById('admin-year').value;
+            adminState.term = document.getElementById('admin-term').value;
+            document.getElementById('overview-subtitle').innerText = `${adminState.term} Exam — Academic Year ${adminState.year}`;
+            
+            adminState.masterData = {};
+            let stats = { submitted: 0, progress: 0, pending: 0, students: 0 };
+            
+            const snap = await window.getDocs(window.collection(window.db, `results_${adminState.year}`));
+            snap.forEach(doc => {
+                if(doc.id.startsWith(adminState.term + "_")) {
+                    let cid = doc.id.replace(adminState.term + "_", "");
+                    adminState.masterData[cid] = doc.data();
+                }
+            });
+
+            let tableHTML = "";
+            sysConfig.classes.forEach(c => {
+                let data = adminState.masterData[c.id];
+                let status = "Pending", statusUI = `<span class="bg-red-100 text-red-700 px-2 py-1 rounded text-xs font-bold">Pending</span>`;
+                let stuCount = 0, dateStr = "-";
+                
+                if (data) {
+                    stuCount = data.students.length;
+                    stats.students += stuCount;
+                    if(data.status === 'submitted') {
+                        status = "Submitted"; stats.submitted++;
+                        statusUI = `<span class="bg-green-100 text-green-700 px-2 py-1 rounded text-xs font-bold">Submitted</span>`;
+                    } else {
+                        status = "In Progress"; stats.progress++;
+                        statusUI = `<span class="bg-yellow-100 text-yellow-700 px-2 py-1 rounded text-xs font-bold">Draft</span>`;
+                    }
+                    if(data.lastUpdated) dateStr = new Date(data.lastUpdated).toLocaleString();
+                } else { stats.pending++; }
+
+                let actBtn = data ? `<button onclick="adminExportSingle('${c.id}')" class="bg-emerald-500 text-white px-3 py-1 rounded text-xs font-bold shadow hover:bg-emerald-600">⬇️ Excel</button>` : '';
+
+                tableHTML += `<tr class="hover:bg-slate-50 border-b border-slate-100">
+                    <td class="px-6 py-3 font-bold text-slate-700">${c.id}</td>
+                    <td class="px-6 py-3 text-center text-slate-500 font-medium">${stuCount}</td>
+                    <td class="px-6 py-3">${statusUI}</td><td class="px-6 py-3 text-xs text-slate-400">${dateStr}</td>
+                    <td class="px-6 py-3 text-right">${actBtn}</td>
+                </tr>`;
+            });
+            
+            document.getElementById('stat-total').innerText = sysConfig.classes.length;
+            document.getElementById('stat-submitted').innerText = stats.submitted;
+            document.getElementById('stat-progress').innerText = stats.progress;
+            document.getElementById('stat-pending').innerText = stats.pending;
+            document.getElementById('admin-status-table').innerHTML = tableHTML;
+        }
+
+        // --- ADMIN CLASS CONFIGURATION ---
+        async function createNewClass() {
+            let name = prompt("Enter new Class ID (e.g. 'Class VI-Newton'):");
+            if(name && !sysConfig.classes.find(c => c.id === name)) {
+                sysConfig.classes.push({ id: name, numeric: [], grading: [] });
+                await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+                updateAdminSidebarClasses();
+                openClassConfig(name);
             }
-            await buildAndDownloadExcel(className, schoolMasterData[className], false);
         }
 
-        async function buildAndDownloadExcel(className, data, isMaster) {
-            const workbook = new ExcelJS.Workbook();
-            let year = document.getElementById('academic-year').value;
-            let term = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
-            let fullColumns = ["Roll No.", "Student Name", ...sysConfig.numericSubjects, ...sysConfig.gradingSubjects, "Total", "%age", "Grade", "Position"];
+        function openClassConfig(classId) {
+            showAdminView('class-config');
+            adminState.activeConfigClassId = classId;
+            document.getElementById('config-class-title').innerText = `Settings: ${classId}`;
+            renderClassConfig();
+        }
 
+        function renderClassConfig() {
+            let c = sysConfig.classes.find(x => x.id === adminState.activeConfigClassId);
+            
+            let numHTML = '';
+            c.numeric.forEach((sub, i) => {
+                numHTML += `<li class="flex justify-between items-center bg-slate-50 p-3 border rounded text-sm">
+                    <span class="font-bold text-blue-900">${sub.name} <span class="text-xs text-slate-500 font-normal ml-2">(Max: ${sub.max})</span></span>
+                    <button onclick="removeClassSub('numeric', ${i})" class="text-red-500 hover:bg-red-100 p-1 rounded font-bold">X</button>
+                </li>`;
+            });
+            document.getElementById('config-num-list').innerHTML = numHTML;
+
+            let gradHTML = '';
+            c.grading.forEach((sub, i) => {
+                gradHTML += `<li class="flex justify-between items-center bg-slate-50 p-3 border rounded text-sm">
+                    <span class="font-bold text-purple-900">${sub}</span>
+                    <button onclick="removeClassSub('grading', ${i})" class="text-red-500 hover:bg-red-100 p-1 rounded font-bold">X</button>
+                </li>`;
+            });
+            document.getElementById('config-grad-list').innerHTML = gradHTML;
+        }
+
+        async function addClassSubject(type) {
+            let c = sysConfig.classes.find(x => x.id === adminState.activeConfigClassId);
+            if(type === 'numeric') {
+                let name = document.getElementById('add-num-name').value.trim();
+                let max = document.getElementById('add-num-max').value;
+                if(name && max && !c.numeric.find(s=>s.name===name)) {
+                    c.numeric.push({name: name, max: parseInt(max)});
+                    document.getElementById('add-num-name').value = ''; document.getElementById('add-num-max').value = '';
+                }
+            } else {
+                let name = document.getElementById('add-grad-name').value.trim();
+                if(name && !c.grading.includes(name)) {
+                    c.grading.push(name); document.getElementById('add-grad-name').value = '';
+                }
+            }
+            await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+            renderClassConfig();
+        }
+
+        async function removeClassSub(type, i) {
+            let c = sysConfig.classes.find(x => x.id === adminState.activeConfigClassId);
+            if(type === 'numeric') c.numeric.splice(i, 1); else c.grading.splice(i, 1);
+            await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+            renderClassConfig();
+        }
+
+        async function deleteCurrentClass() {
+            if(confirm(`WARNING: Are you sure you want to permanently delete ${adminState.activeConfigClassId} from the system?`)) {
+                sysConfig.classes = sysConfig.classes.filter(c => c.id !== adminState.activeConfigClassId);
+                await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+                updateAdminSidebarClasses();
+                loadAdminOverview();
+            }
+        }
+
+        // --- LOGO UPLOAD ---
+        async function uploadLogo(event) {
+            const file = event.target.files[0];
+            if (file) {
+                const reader = new FileReader();
+                reader.onload = async function(e) {
+                    sysConfig.logoBase64 = e.target.result;
+                    await window.setDoc(window.doc(window.db, "settings", "global_config"), sysConfig);
+                    updateLogos(); alert("Logo Updated Globally!");
+                }
+                reader.readAsDataURL(file);
+            }
+        }
+
+        // --- EXCEL LOGIC ---
+        async function teacherExportExcel() { await generateExcel(teacherState.classId, teacherState.data.students, teacherState.year, teacherState.term, false); }
+        async function adminExportSingle(classId) { await generateExcel(classId, adminState.masterData[classId].students, adminState.year, adminState.term, false); }
+        async function adminDownloadMasterExcel() {
+            if(Object.keys(adminState.masterData).length === 0) return alert("No data available to download for this term.");
+            await generateExcel("Master", null, adminState.year, adminState.term, true);
+        }
+
+        async function generateExcel(classId, singleData, year, term, isMaster) {
+            const workbook = new ExcelJS.Workbook();
+            
             let logoId = null;
             if (sysConfig.logoBase64) {
-                const base64Data = sysConfig.logoBase64.split(',')[1];
-                const ext = sysConfig.logoBase64.substring(sysConfig.logoBase64.indexOf('/') + 1, sysConfig.logoBase64.indexOf(';'));
-                logoId = workbook.addImage({ base64: base64Data, extension: ext.includes('png') ? 'png' : 'jpeg' });
+                const b64 = sysConfig.logoBase64.split(',')[1];
+                const ext = sysConfig.logoBase64.substring(sysConfig.logoBase64.indexOf('/')+1, sysConfig.logoBase64.indexOf(';'));
+                logoId = workbook.addImage({ base64: b64, extension: ext.includes('png') ? 'png' : 'jpeg' });
             }
 
-            const classesToProcess = isMaster ? Object.keys(data) : [className];
+            const classesToProcess = isMaster ? Object.keys(adminState.masterData) : [classId];
 
-            classesToProcess.forEach(cls => {
-                let students = isMaster ? data[cls] : data;
-                const sheet = workbook.addWorksheet(cls);
+            classesToProcess.forEach(cid => {
+                let cConf = sysConfig.classes.find(c => c.id === cid);
+                let students = isMaster ? adminState.masterData[cid].students : singleData;
+                if(!cConf || !students) return; // Skip if misconfigured
+                
+                let numCols = cConf.numeric.map(s => `${s.name} (${s.max})`);
+                let fullCols = ["Roll No.", "Student Name", ...numCols, ...cConf.grading, "Total", "%age", "Grade", "Position"];
+                
+                const sheet = workbook.addWorksheet(cid.substring(0,30)); // Max 31 chars for Excel sheet name
 
-                sheet.getRow(1).height = 30;
-                sheet.getRow(2).height = 30;
+                sheet.getRow(1).height = 30; sheet.getRow(2).height = 30;
+                sheet.mergeCells(1, 1, 1, fullCols.length);
+                let t1 = sheet.getCell('A1'); t1.value = 'NWW RAVENWOOD INTERNATIONAL SCHOOL';
+                t1.font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } }; t1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; t1.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                sheet.mergeCells(1, 1, 1, fullColumns.length);
-                let title1 = sheet.getCell('A1');
-                title1.value = 'NWW RAVENWOOD INTERNATIONAL SCHOOL';
-                title1.font = { size: 18, bold: true, color: { argb: 'FFFFFFFF' } };
-                title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; 
-                title1.alignment = { horizontal: 'center', vertical: 'middle' };
+                sheet.mergeCells(2, 1, 2, fullCols.length);
+                let t2 = sheet.getCell('A2'); t2.value = `${term} Result | ${cid.replace('-', ' ')} | ${year}`;
+                t2.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } }; t2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } }; t2.alignment = { horizontal: 'center', vertical: 'middle' };
 
-                sheet.mergeCells(2, 1, 2, fullColumns.length);
-                let title2 = sheet.getCell('A2');
-                title2.value = `${term} Cumulative Result of ${cls.replace('-', ' ')} | ${year}`;
-                title2.font = { size: 14, bold: true, color: { argb: 'FFFFFFFF' } };
-                title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1D4ED8' } }; 
-                title2.alignment = { horizontal: 'center', vertical: 'middle' };
+                if (logoId !== null) sheet.addImage(logoId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 70, height: 70 } });
 
-                if (logoId !== null) {
-                    sheet.addImage(logoId, { tl: { col: 0.1, row: 0.1 }, ext: { width: 70, height: 70 } });
-                }
-
-                let headerRow = sheet.addRow(fullColumns);
-                headerRow.height = 25;
-                headerRow.eachCell((cell, colNum) => {
-                    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } };
-                    cell.alignment = { horizontal: 'center', vertical: 'middle' };
-                    cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
-                    
-                    if (colNum <= 2 + sysConfig.numericSubjects.length) {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; 
-                    } else if (colNum <= 2 + sysConfig.numericSubjects.length + sysConfig.gradingSubjects.length) {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B21B6' } }; 
-                    } else {
-                        cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; 
-                        cell.font = { bold: true, color: { argb: 'FFFDE047' } }; 
-                    }
+                let headRow = sheet.addRow(fullCols); headRow.height = 25;
+                headRow.eachCell((cell, colNum) => {
+                    cell.font = { bold: true, color: { argb: 'FFFFFFFF' } }; cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
+                    if (colNum <= 2 + cConf.numeric.length) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; } 
+                    else if (colNum <= 2 + cConf.numeric.length + cConf.grading.length) { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF5B21B6' } }; } 
+                    else { cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; cell.font = { bold: true, color: { argb: 'FFFDE047' } }; }
                 });
 
                 sheet.getColumn(1).width = 10; sheet.getColumn(2).width = 25; 
-                for(let i = 3; i <= fullColumns.length; i++) sheet.getColumn(i).width = 12;
+                for(let i = 3; i <= fullCols.length; i++) sheet.getColumn(i).width = 12;
 
                 students.forEach((s, index) => {
-                    let rowData = [s.roll || index + 1, s.name || "", ...sysConfig.numericSubjects.map(sub => s.marks[sub] || ""), ...sysConfig.gradingSubjects.map(sub => s.grades[sub] || ""), s.total || "", s.percentage || "", s.grade || "", s.rank || ""];
+                    let rowData = [s.roll || index + 1, s.name || "", ...cConf.numeric.map(sub => s.marks[sub.name] || ""), ...cConf.grading.map(sub => s.grades[sub] || ""), s.total || "", s.percentage || "", s.grade || "", s.rank || ""];
                     let row = sheet.addRow(rowData);
                     row.eachCell((cell, colNum) => { 
-                        cell.alignment = { horizontal: 'center', vertical: 'middle' }; 
-                        cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; 
-                        if(colNum > fullColumns.length - 4) {
-                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } }; 
-                            cell.font = { bold: true };
-                            if (colNum === fullColumns.length) cell.font = { bold: true, color: { argb: 'FFDC2626' } }; 
-                            if (colNum === fullColumns.length - 1) cell.font = { bold: true, color: { argb: 'FF2563EB' } }; 
+                        cell.alignment = { horizontal: 'center', vertical: 'middle' }; cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} }; 
+                        if(colNum > fullCols.length - 4) {
+                            cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFF0FDF4' } }; cell.font = { bold: true };
+                            if (colNum === fullCols.length) cell.font = { bold: true, color: { argb: 'FFDC2626' } }; 
+                            if (colNum === fullCols.length - 1) cell.font = { bold: true, color: { argb: 'FF2563EB' } }; 
                         }
                     });
                 });
@@ -539,7 +615,7 @@
             const buffer = await workbook.xlsx.writeBuffer();
             const blob = new Blob([buffer], { type: 'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet' });
             const link = document.createElement('a'); link.href = URL.createObjectURL(blob); 
-            link.download = isMaster ? `Ravenwood_Master_Result_${year}.xlsx` : `Result_${className}_${year}.xlsx`; 
+            link.download = isMaster ? `Master_Result_${year}_${term}.xlsx` : `Result_${classId}_${term}.xlsx`; 
             link.click();
         }
     </script>

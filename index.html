@@ -9,8 +9,9 @@
     
     <script type="module">
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
-        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+        import { getFirestore, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
+        // Your Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCaCJ93-Y4_Q8C1nwXlKSD_WVlfzfkOCOk",
             authDomain: "ravenwood-exam-system.firebaseapp.com",
@@ -21,83 +22,215 @@
         };
 
         const app = initializeApp(firebaseConfig);
-        const db = getFirestore(app);
-        window.db = db;
+        window.db = getFirestore(app);
+        window.doc = doc;
+        window.setDoc = setDoc;
+        window.getDoc = getDoc;
+        window.onSnapshot = onSnapshot;
     </script>
 </head>
-<body class="bg-gray-100 text-gray-800 font-sans">
+<body class="bg-gray-50 text-gray-800 font-sans">
 
     <nav class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
         <div class="flex items-center space-x-3">
             <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-blue-900 font-bold text-xs">LOGO</div>
             <h1 class="text-xl font-bold tracking-wide">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
         </div>
-        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded text-sm font-semibold transition shadow">Admin Login</button>
+        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded font-semibold transition">Admin Login</button>
     </nav>
 
-    <div id="main-content" class="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-xl rounded-lg border border-gray-200">
+    <div class="max-w-7xl mx-auto mt-6 p-6 bg-white shadow-xl rounded-lg border border-gray-200">
         
-        <div id="teacher-login-section" class="text-center py-12">
-            <h2 class="text-3xl font-bold text-gray-800 mb-4">Teacher Portal</h2>
-            <p class="text-gray-500 mb-8">Select your class and exam term to enter marks or download reports.</p>
-            
+        <div id="teacher-login-section" class="text-center py-10">
+            <h2 class="text-3xl font-bold text-gray-800 mb-6">Teacher Portal</h2>
             <div class="flex flex-col md:flex-row justify-center gap-4 mb-8">
-                <select id="academic-year" class="p-3 border rounded shadow-sm w-full md:w-48 bg-gray-50 focus:ring-2 focus:ring-blue-500">
-                    <option value="2026-27">2026-27</option>
-                    <option value="2025-26">2025-26 (Historical)</option>
-                </select>
-                
-                <select id="exam-term" class="p-3 border rounded shadow-sm w-full md:w-48 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                <select id="academic-year" class="p-3 border rounded shadow-sm bg-gray-50"><option value="2026-27">2026-27</option></select>
+                <select id="exam-term" class="p-3 border rounded shadow-sm bg-gray-50">
                     <option value="PT1">PT 1 Exam</option>
                     <option value="HalfYearly">Half Yearly Exam</option>
                     <option value="PT2">PT 2 Exam</option>
                     <option value="Final">Final Year Exam</option>
                 </select>
-
-                <select id="class-select" class="p-3 border rounded shadow-sm w-full md:w-64 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                <select id="class-select" class="p-3 border rounded shadow-sm w-64 bg-gray-50">
                     <option value="">-- Select Class --</option>
                     <option value="I-Daffodils">Class I - Daffodils</option>
                     <option value="V-MtBlanc">Class V - Mt. Blanc</option>
                 </select>
             </div>
-            
-            <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-10 py-3 rounded-lg font-bold text-lg shadow-md transition transform hover:scale-105">Enter Class</button>
+            <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded font-bold text-lg shadow">Enter Class</button>
         </div>
 
         <div id="teacher-dashboard" class="hidden">
-            <div class="flex justify-between items-center mb-6">
-                <h2 id="dashboard-title" class="text-2xl font-bold text-blue-900">Class Data</h2>
+            <div class="flex justify-between items-center mb-4">
+                <h2 id="dashboard-title" class="text-2xl font-bold text-blue-900"></h2>
                 <div class="space-x-3">
-                    <button class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded shadow font-semibold">Download Excel</button>
-                    <button onclick="location.reload()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded shadow font-semibold">Logout</button>
+                    <span id="save-status" class="text-sm font-semibold text-gray-500">All changes saved</span>
+                    <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-semibold shadow">💾 Save to Cloud</button>
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-semibold shadow">⬇️ Download Excel</button>
+                    <button onclick="location.reload()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded font-semibold shadow">Logout</button>
                 </div>
             </div>
-            <div id="table-container" class="overflow-x-auto border rounded shadow-sm mb-4 p-4 text-center text-gray-500">
-                [Data grid will render here]
-            </div>
-            <button class="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 px-4 py-2 rounded font-semibold transition">+ Add Student Row</button>
-        </div>
 
+            <div class="overflow-x-auto border rounded shadow-sm mb-4">
+                <table class="w-full text-sm text-left whitespace-nowrap">
+                    <thead class="text-xs text-white uppercase bg-blue-900" id="table-head"></thead>
+                    <tbody id="table-body"></tbody>
+                </table>
+            </div>
+            <button onclick="addStudentRow()" class="bg-blue-50 text-blue-700 border border-blue-300 px-4 py-2 rounded font-semibold hover:bg-blue-100 transition">+ Add Student Row</button>
+        </div>
     </div>
 
     <script>
-        function adminLogin() {
-            const pwd = prompt("Enter Master Admin Password:");
-            if(pwd === "Admin@Ravenwood2025") {
-                alert("Admin access granted. Loading admin panel...");
-            } else if (pwd) {
-                alert("Incorrect Password.");
-            }
+        // --- CONFIGURATION ---
+        const TERM_MAX_MARKS = { "PT1": 40, "HalfYearly": 80, "PT2": 40, "Final": 100 };
+        const NUMERIC_SUBJECTS = ["English", "Hindi", "Punjabi", "Maths", "EVS", "ICT"];
+        const GRADING_SUBJECTS = ["Art", "Dance", "Music", "P.Edu"];
+        
+        let currentState = { year: "", term: "", cls: "", students: [] };
+
+        // --- CORE MATH ENGINE ---
+        function calculateGradesAndRanks() {
+            let maxPerSubject = TERM_MAX_MARKS[currentState.term] || 100;
+            let totalMax = maxPerSubject * NUMERIC_SUBJECTS.length;
+
+            // 1. Calculate Totals & Percentages
+            currentState.students.forEach(s => {
+                let total = 0;
+                let subjectsFilled = 0;
+                
+                NUMERIC_SUBJECTS.forEach(sub => {
+                    let mark = parseFloat(s.marks[sub]);
+                    if (!isNaN(mark)) { total += mark; subjectsFilled++; }
+                });
+
+                if (subjectsFilled === NUMERIC_SUBJECTS.length) {
+                    s.total = total;
+                    s.percentage = parseFloat(((total / totalMax) * 100).toFixed(2));
+                    
+                    // Grade Logic
+                    let p = s.percentage;
+                    if(p >= 91) s.grade = "A1"; else if(p >= 81) s.grade = "A2";
+                    else if(p >= 71) s.grade = "B1"; else if(p >= 61) s.grade = "B2";
+                    else if(p >= 51) s.grade = "C1"; else if(p >= 41) s.grade = "C2";
+                    else if(p >= 33) s.grade = "D"; else s.grade = "E";
+                } else {
+                    s.total = "Inc"; s.percentage = "Inc"; s.grade = ""; s.rank = "";
+                }
+            });
+
+            // 2. Dense Ranking Logic (Top 4)
+            let validStudents = currentState.students.filter(s => s.percentage !== "Inc");
+            let uniqueScores = [...new Set(validStudents.map(s => s.percentage))].sort((a, b) => b - a);
+
+            currentState.students.forEach(s => {
+                if (s.percentage !== "Inc") {
+                    let rankNum = uniqueScores.indexOf(s.percentage) + 1;
+                    if(rankNum === 1) s.rank = "1st";
+                    else if(rankNum === 2) s.rank = "2nd";
+                    else if(rankNum === 3) s.rank = "3rd";
+                    else if(rankNum === 4) s.rank = "4th";
+                    else s.rank = ""; // Blank if 5th or below
+                }
+            });
         }
 
-        function loadClassData() {
-            const cls = document.getElementById('class-select').value;
-            const term = document.getElementById('exam-term').value;
-            if(!cls) { alert("Please select a class!"); return; }
+        // --- UI & RENDERING ---
+        async function loadClassData() {
+            currentState.year = document.getElementById('academic-year').value;
+            currentState.term = document.getElementById('exam-term').value;
+            currentState.cls = document.getElementById('class-select').value;
             
+            if(!currentState.cls) return alert("Select a class!");
+
             document.getElementById('teacher-login-section').classList.add('hidden');
             document.getElementById('teacher-dashboard').classList.remove('hidden');
-            document.getElementById('dashboard-title').innerText = `${cls.replace('-', ' ')} - ${term}`;
+            document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${currentState.term.replace('Yearly', ' Yearly')}`;
+
+            // Fetch from Firebase
+            const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
+            const docSnap = await window.getDoc(docRef);
+            
+            if (docSnap.exists()) {
+                currentState.students = docSnap.data().students || [];
+            } else {
+                currentState.students = [{ roll: 1, name: "", marks: {}, grades: {} }]; // Default 1 blank row
+            }
+            renderTable();
+        }
+
+        function renderTable() {
+            calculateGradesAndRanks();
+            
+            // Render Headers
+            let headHTML = `<tr><th class="px-4 py-3">Roll</th><th class="px-4 py-3 w-48">Student Name</th>`;
+            NUMERIC_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-blue-800">${sub}</th>`);
+            headHTML += `<th class="px-4 py-3 text-yellow-300">Total</th><th class="px-4 py-3 text-yellow-300">%age</th><th class="px-4 py-3 text-yellow-300">Grade</th><th class="px-4 py-3 text-yellow-300">Rank</th>`;
+            GRADING_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-purple-800">${sub}</th>`);
+            headHTML += `</tr>`;
+            document.getElementById('table-head').innerHTML = headHTML;
+
+            // Render Rows
+            let bodyHTML = "";
+            currentState.students.forEach((s, index) => {
+                bodyHTML += `<tr class="border-b hover:bg-gray-50">
+                    <td class="px-4 py-2 font-bold">${s.roll || index + 1}</td>
+                    <td class="px-4 py-2"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="border p-1 w-full rounded"></td>`;
+                
+                NUMERIC_SUBJECTS.forEach(sub => {
+                    let val = s.marks[sub] || '';
+                    bodyHTML += `<td class="px-4 py-2"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="border p-1 w-16 rounded text-center"></td>`;
+                });
+
+                bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50">${s.total || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50">${s.percentage || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50 text-blue-600">${s.grade || ''}</td>
+                             <td class="px-4 py-2 font-bold bg-green-50 text-red-600">${s.rank || ''}</td>`;
+                
+                GRADING_SUBJECTS.forEach(sub => {
+                    let val = s.grades[sub] || '';
+                    bodyHTML += `<td class="px-4 py-2"><input type="text" maxlength="2" value="${val}" onchange="updateData(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="border p-1 w-12 rounded text-center uppercase"></td>`;
+                });
+                bodyHTML += `</tr>`;
+            });
+            document.getElementById('table-body').innerHTML = bodyHTML;
+        }
+
+        // --- DATA MANAGEMENT ---
+        function updateData(index, field, value, subField = null) {
+            document.getElementById('save-status').innerText = "⚠️ Unsaved Changes";
+            document.getElementById('save-status').classList.replace('text-gray-500', 'text-red-500');
+            
+            if (subField) {
+                if (!currentState.students[index][field]) currentState.students[index][field] = {};
+                currentState.students[index][field][subField] = value;
+            } else {
+                currentState.students[index][field] = value;
+            }
+            renderTable(); // Re-trigger math engine
+        }
+
+        function addStudentRow() {
+            let nextRoll = currentState.students.length + 1;
+            currentState.students.push({ roll: nextRoll, name: "", marks: {}, grades: {} });
+            renderTable();
+        }
+
+        async function saveToFirebase() {
+            const status = document.getElementById('save-status');
+            status.innerText = "Saving...";
+            
+            try {
+                const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
+                await window.setDoc(docRef, { students: currentState.students, lastUpdated: new Date().toISOString() });
+                
+                status.innerText = "✅ Saved to Cloud";
+                status.classList.replace('text-red-500', 'text-green-600');
+                setTimeout(() => status.classList.replace('text-green-600', 'text-gray-500'), 3000);
+            } catch (error) {
+                alert("Error saving: " + error.message);
+                status.innerText = "❌ Save Failed";
+            }
         }
     </script>
 </body>

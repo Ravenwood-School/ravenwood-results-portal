@@ -11,7 +11,7 @@
         import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
         import { getFirestore, doc, setDoc, getDoc } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
 
-        // YOUR EXACT NEW FIREBASE CONFIGURATION
+        // Your exact Firebase Configuration
         const firebaseConfig = {
             apiKey: "AIzaSyCf7oLsMasSxi496kcdxn6zVjUkpFqAU0E",
             authDomain: "ravenwood-results-portal.firebaseapp.com",
@@ -35,7 +35,7 @@
             <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-blue-900 font-bold text-xs">LOGO</div>
             <h1 class="text-xl font-bold tracking-wide">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
         </div>
-        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded font-semibold transition">Admin Login</button>
+        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded font-semibold transition shadow">Admin Login</button>
     </nav>
 
     <div class="max-w-7xl mx-auto mt-6 p-6 bg-white shadow-xl rounded-lg border border-gray-200">
@@ -59,17 +59,17 @@
                     <option value="V-MtBlanc">Class V - Mt. Blanc</option>
                 </select>
             </div>
-            <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded font-bold text-lg shadow">Enter Class</button>
+            <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-8 py-3 rounded font-bold text-lg shadow transition transform hover:scale-105">Enter Class</button>
         </div>
 
         <div id="teacher-dashboard" class="hidden">
             <div class="flex justify-between items-center mb-4">
                 <h2 id="dashboard-title" class="text-2xl font-bold text-blue-900"></h2>
                 <div class="space-x-3">
-                    <span id="save-status" class="text-sm font-semibold text-gray-500">All changes saved</span>
-                    <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-semibold shadow">💾 Save to Cloud</button>
-                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-semibold shadow">⬇️ Download Excel</button>
-                    <button onclick="location.reload()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded font-semibold shadow">Logout</button>
+                    <span id="save-status" class="text-sm font-semibold text-gray-500 mr-2">All changes saved</span>
+                    <button onclick="saveToFirebase()" class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded font-semibold shadow transition">💾 Save to Cloud</button>
+                    <button onclick="exportToExcel()" class="bg-green-600 hover:bg-green-500 text-white px-4 py-2 rounded font-semibold shadow transition">⬇️ Download Excel</button>
+                    <button onclick="location.reload()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded font-semibold shadow transition">Logout</button>
                 </div>
             </div>
 
@@ -79,7 +79,7 @@
                     <tbody id="table-body"></tbody>
                 </table>
             </div>
-            <button onclick="addStudentRow()" class="bg-blue-50 text-blue-700 border border-blue-300 px-4 py-2 rounded font-semibold hover:bg-blue-100 transition">+ Add Student Row</button>
+            <button onclick="addStudentRow()" class="bg-blue-50 text-blue-700 border border-blue-300 px-4 py-2 rounded font-semibold hover:bg-blue-100 transition shadow-sm">+ Add Student Row</button>
         </div>
     </div>
 
@@ -143,7 +143,7 @@
             currentState.term = document.getElementById('exam-term').value;
             currentState.cls = document.getElementById('class-select').value;
             
-            if(!currentState.cls) return alert("Select a class!");
+            if(!currentState.cls) return alert("Please select a class!");
 
             document.getElementById('teacher-login-section').classList.add('hidden');
             document.getElementById('teacher-dashboard').classList.remove('hidden');
@@ -151,14 +151,14 @@
             let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
             document.getElementById('dashboard-title').innerText = `${currentState.cls.replace('-', ' ')} | ${termLabel}`;
 
-            // Fetch from Firebase
+            // Fetch Data from Firebase
             const docRef = window.doc(window.db, `results_${currentState.year}`, `${currentState.term}_${currentState.cls}`);
             const docSnap = await window.getDoc(docRef);
             
             if (docSnap.exists()) {
                 currentState.students = docSnap.data().students || [];
             } else {
-                currentState.students = [{ roll: 1, name: "", marks: {}, grades: {} }]; // Default 1 blank row
+                currentState.students = [{ roll: 1, name: "", marks: {}, grades: {} }]; 
             }
             renderTable();
         }
@@ -166,11 +166,11 @@
         function renderTable() {
             calculateGradesAndRanks();
             
-            // Render Headers
+            // Render Headers (Subjects first, then Totals at the end)
             let headHTML = `<tr><th class="px-4 py-3">Roll</th><th class="px-4 py-3 w-48">Student Name</th>`;
             NUMERIC_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-blue-800">${sub}</th>`);
-            headHTML += `<th class="px-4 py-3 text-yellow-300">Total</th><th class="px-4 py-3 text-yellow-300">%age</th><th class="px-4 py-3 text-yellow-300">Grade</th><th class="px-4 py-3 text-yellow-300">Rank</th>`;
             GRADING_SUBJECTS.forEach(sub => headHTML += `<th class="px-4 py-3 bg-purple-800">${sub}</th>`);
+            headHTML += `<th class="px-4 py-3 text-yellow-300 border-l-2 border-gray-400">Total</th><th class="px-4 py-3 text-yellow-300"># %age</th><th class="px-4 py-3 text-yellow-300">Grade</th><th class="px-4 py-3 text-yellow-300">Rank</th>`;
             headHTML += `</tr>`;
             document.getElementById('table-head').innerHTML = headHTML;
 
@@ -179,22 +179,25 @@
             currentState.students.forEach((s, index) => {
                 bodyHTML += `<tr class="border-b hover:bg-gray-50">
                     <td class="px-4 py-2 font-bold text-center">${s.roll || index + 1}</td>
-                    <td class="px-4 py-2"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="border p-1 w-full rounded"></td>`;
+                    <td class="px-4 py-2"><input type="text" value="${s.name || ''}" onchange="updateData(${index}, 'name', this.value)" class="border p-1 w-full rounded focus:ring-2 focus:ring-blue-400 outline-none"></td>`;
                 
+                // 1. Numeric Subjects
                 NUMERIC_SUBJECTS.forEach(sub => {
                     let val = s.marks[sub] || '';
-                    bodyHTML += `<td class="px-4 py-2"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="border p-1 w-16 rounded text-center"></td>`;
+                    bodyHTML += `<td class="px-4 py-2"><input type="number" value="${val}" onchange="updateData(${index}, 'marks', this.value, '${sub}')" class="border p-1 w-16 rounded text-center focus:ring-2 focus:ring-blue-400 outline-none"></td>`;
                 });
 
-                bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50 text-center">${s.total || ''}</td>
+                // 2. Grading Subjects (Art, Dance, etc.)
+                GRADING_SUBJECTS.forEach(sub => {
+                    let val = s.grades[sub] || '';
+                    bodyHTML += `<td class="px-4 py-2"><input type="text" maxlength="2" value="${val}" onchange="updateData(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="border p-1 w-12 rounded text-center uppercase focus:ring-2 focus:ring-purple-400 outline-none"></td>`;
+                });
+
+                // 3. Calculated Totals (Moved to the end)
+                bodyHTML += `<td class="px-4 py-2 font-bold bg-green-50 text-center border-l-2 border-gray-300">${s.total || ''}</td>
                              <td class="px-4 py-2 font-bold bg-green-50 text-center">${s.percentage || ''}</td>
                              <td class="px-4 py-2 font-bold bg-green-50 text-blue-600 text-center">${s.grade || ''}</td>
                              <td class="px-4 py-2 font-bold bg-green-50 text-red-600 text-center">${s.rank || ''}</td>`;
-                
-                GRADING_SUBJECTS.forEach(sub => {
-                    let val = s.grades[sub] || '';
-                    bodyHTML += `<td class="px-4 py-2"><input type="text" maxlength="2" value="${val}" onchange="updateData(${index}, 'grades', this.value.toUpperCase(), '${sub}')" class="border p-1 w-12 rounded text-center uppercase"></td>`;
-                });
                 bodyHTML += `</tr>`;
             });
             document.getElementById('table-body').innerHTML = bodyHTML;
@@ -211,7 +214,7 @@
             } else {
                 currentState.students[index][field] = value;
             }
-            renderTable(); // Re-trigger math engine
+            renderTable(); // Re-trigger math engine instantly
         }
 
         function addStudentRow() {
@@ -243,35 +246,37 @@
             const sheet = workbook.addWorksheet(currentState.cls);
 
             let termLabel = document.getElementById('exam-term').options[document.getElementById('exam-term').selectedIndex].text;
-            let fullColumns = ["Roll No.", "Student Name", ...NUMERIC_SUBJECTS, "Total", "%age", "Grade", "Position", ...GRADING_SUBJECTS];
+            
+            // Excel columns ordered to match the new screen layout
+            let fullColumns = ["Roll No.", "Student Name", ...NUMERIC_SUBJECTS, ...GRADING_SUBJECTS, "Total", "%age", "Grade", "Position"];
 
             // 1. Headers (Rows 1 & 2)
             sheet.mergeCells(1, 1, 1, fullColumns.length);
             let title1 = sheet.getCell('A1');
             title1.value = 'NWW RAVENWOOD INTERNATIONAL SCHOOL';
             title1.font = { size: 16, bold: true, color: { argb: 'FFFFFFFF' } };
-            title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; // Tailwind blue-950
+            title1.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF0F172A' } }; 
             title1.alignment = { horizontal: 'center', vertical: 'middle' };
 
             sheet.mergeCells(2, 1, 2, fullColumns.length);
             let title2 = sheet.getCell('A2');
             title2.value = `${termLabel} Cumulative Result of ${currentState.cls.replace('-', ' ')} for Academic Session ${currentState.year}`;
             title2.font = { size: 12, bold: true, color: { argb: 'FFFFFFFF' } };
-            title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; // Tailwind blue-900
+            title2.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FF1E3A8A' } }; 
             title2.alignment = { horizontal: 'center', vertical: 'middle' };
 
             // 2. Column Headers (Row 3)
             let headerRow = sheet.addRow(fullColumns);
             headerRow.eachCell((cell) => {
                 cell.font = { bold: true };
-                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } }; // Light blue
+                cell.fill = { type: 'pattern', pattern: 'solid', fgColor: { argb: 'FFDBEAFE' } }; 
                 cell.alignment = { horizontal: 'center' };
                 cell.border = { top: {style:'thin'}, left: {style:'thin'}, bottom: {style:'thin'}, right: {style:'thin'} };
             });
 
             // Set Column Widths
-            sheet.getColumn(1).width = 10; // Roll
-            sheet.getColumn(2).width = 25; // Name
+            sheet.getColumn(1).width = 10; 
+            sheet.getColumn(2).width = 25; 
             for(let i = 3; i <= fullColumns.length; i++) sheet.getColumn(i).width = 12;
 
             // 3. Add Student Data
@@ -280,11 +285,11 @@
                     s.roll || index + 1,
                     s.name || "",
                     ...NUMERIC_SUBJECTS.map(sub => s.marks[sub] || ""),
+                    ...GRADING_SUBJECTS.map(sub => s.grades[sub] || ""),
                     s.total || "",
                     s.percentage || "",
                     s.grade || "",
-                    s.rank || "",
-                    ...GRADING_SUBJECTS.map(sub => s.grades[sub] || "")
+                    s.rank || ""
                 ];
                 let row = sheet.addRow(rowData);
                 row.eachCell((cell) => {
@@ -293,7 +298,7 @@
                 });
             });
 
-            // 4. Freeze Top Panes
+            // 4. Freeze Top Panes (Keeps headers visible when scrolling)
             sheet.views = [{ state: 'frozen', ySplit: 3 }];
 
             // Trigger Download
@@ -309,7 +314,7 @@
         function adminLogin() {
             const pwd = prompt("Enter Master Admin Password:");
             if(pwd === "Admin@Ravenwood2025") {
-                alert("Admin access granted! (The Admin Panel overlay will be built in the next module).");
+                alert("Admin access granted! The full Admin Dashboard overlay will be connected next.");
             } else if (pwd) {
                 alert("Incorrect Password.");
             }

@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Ravenwood Result Management System</title>
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/exceljs/4.3.0/exceljs.min.js"></script>
+    
+    <script type="module">
+        import { initializeApp } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-app.js";
+        import { getFirestore, collection, doc, setDoc, getDoc, onSnapshot } from "https://www.gstatic.com/firebasejs/10.8.1/firebase-firestore.js";
+
+        const firebaseConfig = {
+            apiKey: "AIzaSyCaCJ93-Y4_Q8C1nwXlKSD_WVlfzfkOCOk",
+            authDomain: "ravenwood-exam-system.firebaseapp.com",
+            projectId: "ravenwood-exam-system",
+            storageBucket: "ravenwood-exam-system.firebasestorage.app",
+            messagingSenderId: "702062155178",
+            appId: "1:702062155178:web:fdb06eea0adf1fe21447d3"
+        };
+
+        const app = initializeApp(firebaseConfig);
+        const db = getFirestore(app);
+        window.db = db;
+    </script>
+</head>
+<body class="bg-gray-100 text-gray-800 font-sans">
+
+    <nav class="bg-blue-900 text-white p-4 shadow-md flex justify-between items-center">
+        <div class="flex items-center space-x-3">
+            <div class="h-10 w-10 rounded-full bg-white flex items-center justify-center text-blue-900 font-bold text-xs">LOGO</div>
+            <h1 class="text-xl font-bold tracking-wide">NWW RAVENWOOD INTERNATIONAL SCHOOL</h1>
+        </div>
+        <button onclick="adminLogin()" class="bg-blue-700 hover:bg-blue-600 px-4 py-2 rounded text-sm font-semibold transition shadow">Admin Login</button>
+    </nav>
+
+    <div id="main-content" class="max-w-6xl mx-auto mt-10 p-6 bg-white shadow-xl rounded-lg border border-gray-200">
+        
+        <div id="teacher-login-section" class="text-center py-12">
+            <h2 class="text-3xl font-bold text-gray-800 mb-4">Teacher Portal</h2>
+            <p class="text-gray-500 mb-8">Select your class and exam term to enter marks or download reports.</p>
+            
+            <div class="flex flex-col md:flex-row justify-center gap-4 mb-8">
+                <select id="academic-year" class="p-3 border rounded shadow-sm w-full md:w-48 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                    <option value="2026-27">2026-27</option>
+                    <option value="2025-26">2025-26 (Historical)</option>
+                </select>
+                
+                <select id="exam-term" class="p-3 border rounded shadow-sm w-full md:w-48 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                    <option value="PT1">PT 1 Exam</option>
+                    <option value="HalfYearly">Half Yearly Exam</option>
+                    <option value="PT2">PT 2 Exam</option>
+                    <option value="Final">Final Year Exam</option>
+                </select>
+
+                <select id="class-select" class="p-3 border rounded shadow-sm w-full md:w-64 bg-gray-50 focus:ring-2 focus:ring-blue-500">
+                    <option value="">-- Select Class --</option>
+                    <option value="I-Daffodils">Class I - Daffodils</option>
+                    <option value="V-MtBlanc">Class V - Mt. Blanc</option>
+                </select>
+            </div>
+            
+            <button onclick="loadClassData()" class="bg-green-600 hover:bg-green-500 text-white px-10 py-3 rounded-lg font-bold text-lg shadow-md transition transform hover:scale-105">Enter Class</button>
+        </div>
+
+        <div id="teacher-dashboard" class="hidden">
+            <div class="flex justify-between items-center mb-6">
+                <h2 id="dashboard-title" class="text-2xl font-bold text-blue-900">Class Data</h2>
+                <div class="space-x-3">
+                    <button class="bg-blue-600 hover:bg-blue-500 text-white px-4 py-2 rounded shadow font-semibold">Download Excel</button>
+                    <button onclick="location.reload()" class="bg-gray-500 hover:bg-gray-400 text-white px-4 py-2 rounded shadow font-semibold">Logout</button>
+                </div>
+            </div>
+            <div id="table-container" class="overflow-x-auto border rounded shadow-sm mb-4 p-4 text-center text-gray-500">
+                [Data grid will render here]
+            </div>
+            <button class="bg-blue-100 text-blue-700 hover:bg-blue-200 border border-blue-300 px-4 py-2 rounded font-semibold transition">+ Add Student Row</button>
+        </div>
+
+    </div>
+
+    <script>
+        function adminLogin() {
+            const pwd = prompt("Enter Master Admin Password:");
+            if(pwd === "Admin@Ravenwood2025") {
+                alert("Admin access granted. Loading admin panel...");
+            } else if (pwd) {
+                alert("Incorrect Password.");
+            }
+        }
+
+        function loadClassData() {
+            const cls = document.getElementById('class-select').value;
+            const term = document.getElementById('exam-term').value;
+            if(!cls) { alert("Please select a class!"); return; }
+            
+            document.getElementById('teacher-login-section').classList.add('hidden');
+            document.getElementById('teacher-dashboard').classList.remove('hidden');
+            document.getElementById('dashboard-title').innerText = `${cls.replace('-', ' ')} - ${term}`;
+        }
+    </script>
+</body>
+</html>
